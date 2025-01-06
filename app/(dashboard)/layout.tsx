@@ -5,12 +5,13 @@ import AppNavBar from "@/components/app-navbar";
 import { AuthProvider } from "@/components/auth-provider";
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import {LoadingSpinner} from '@/components/loading-spinner';
+import { useEffect, useState } from 'react';
+import { LoadingSpinner } from '@/components/loading-spinner';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading, role } = useAuth();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -18,11 +19,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         router.push('/login');
       } else if (role !== 'admin') {
         router.push('/unauthorized');
+      } else {
+        setIsAuthorized(true);
       }
     }
   }, [user, loading, role, router]);
 
-  if (loading) {
+  
+  if (loading || !isAuthorized) {
     return <LoadingSpinner />;
   }
 

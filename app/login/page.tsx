@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault()
     try {
       await signIn()
@@ -24,9 +25,6 @@ export default function LoginPage() {
     }
   }
 
-  if (loading) {
-    return <LoadingSpinner />
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
