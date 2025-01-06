@@ -1,5 +1,5 @@
 import React from "react";
-import StudentProfileForm from "../components/student-profile";
+import StudentProfileForm from "../../components/student-profile";
 
 const ProfilePage = () => {
   // In a real application, you'd fetch this data from an API or database
