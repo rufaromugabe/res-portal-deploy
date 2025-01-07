@@ -1,6 +1,8 @@
-"use client";
-
-import React, { useState } from "react";
+'use client';
+import React, { useEffect, useState } from "react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { getAuth } from "firebase/auth";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +47,7 @@ export interface StudentProfile {
 
 const StudentProfileSchema = z.object({
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
-  regNumber: z.string().min(1, "Registration number is required"),
+  regNumber: z.string().nullable(),
   gender: z.enum(["Male", "Female"], { required_error: "Gender is required" }),
   part: z.enum(["1", "2", "3", "4", "5"], {
     required_error: "Part is required",
@@ -55,10 +57,13 @@ const StudentProfileSchema = z.object({
 
 type FormValues = z.infer<typeof StudentProfileSchema>;
 
-const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
-  profile,
-}) => {
+const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({ profile }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [authDetails, setAuthDetails] = useState({
+    userName: "",
+    userEmail: "",
+    regNumber: "",
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentProfileSchema),
@@ -71,10 +76,64 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
     },
   });
 
-  const onSubmit = (data: FormValues) => {
+  // Fetch Auth User Details
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const regNumber = user.email?.split("@")[0] || "";
+      setAuthDetails({
+        userName: user.displayName || "",
+        userEmail: user.email || "",
+        regNumber: regNumber,
+      });
+    }
+  }, []);
+
+  // Fetch Profile Data from Firestore using regNumber
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userDoc = doc(db, "students", authDetails.regNumber); // Use regNumber as the document ID
+        const docSnap = await getDoc(userDoc);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          form.reset({
+            phone: data.phone || "",
+            regNumber: data.regNumber || authDetails.regNumber || "",
+            gender: data.gender,
+            part: data.part,
+            programme: data.programme || "",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    if (authDetails.regNumber) {
+      fetchProfile();
+    }
+  }, [authDetails.regNumber, form]);
+
+  const onSubmit = async (data: FormValues) => {
     console.log("Form submitted:", data);
-    // Here you would typically send this data to your backend
-    setIsEditing(false);
+    try {
+      const userDoc = doc(db, "students", authDetails.regNumber); // Use regNumber as the document ID
+      await setDoc(
+        userDoc,
+        {
+          ...data,
+          regNumber: authDetails.regNumber, // Ensure regNumber is stored
+          email: authDetails.userEmail,    // Ensure email is stored
+        },
+        { merge: true }
+      );
+      console.log("Profile updated successfully");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
   };
 
   const handleEditClick = () => {
@@ -93,43 +152,58 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
       </p>
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 max-w-4xl mx-auto"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Name */}
             <div className="space-y-2">
-              <Label
-                htmlFor="name"
-                className="text-lg font-medium text-gray-700 flex items-center"
-              >
+              <Label htmlFor="name" className="text-lg font-medium text-gray-700 flex items-center">
                 <User className="w-5 h-5 mr-2" />
                 Name
               </Label>
               <Input
                 id="name"
-                value={profile.name}
+                value={authDetails.userName}
                 disabled
                 className="bg-gray-100 text-lg"
               />
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-lg font-medium text-gray-700 flex items-center"
-              >
+              <Label htmlFor="email" className="text-lg font-medium text-gray-700 flex items-center">
                 <Mail className="w-5 h-5 mr-2" />
                 Email
               </Label>
               <Input
                 id="email"
-                value={profile.email}
+                value={authDetails.userEmail}
                 disabled
                 className="bg-gray-100 text-lg"
               />
             </div>
 
+            {/* Registration Number */}
+            <FormField
+              control={form.control}
+              name="regNumber"
+              render={() => (
+                <FormItem>
+                  <FormLabel className="text-lg font-medium flex items-center">
+                    <BookOpen className="w-5 h-5 mr-2" />
+                    Registration Number
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      value={authDetails.regNumber}
+                      disabled
+                      className="bg-gray-100 text-lg"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* Phone */}
             <FormField
               control={form.control}
               name="phone"
@@ -152,33 +226,12 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="regNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg font-medium flex items-center">
-                    <BookOpen className="w-5 h-5 mr-2" />
-                    Registration Number
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter your registration number"
-                      {...field}
-                      className="text-lg"
-                      disabled={!isEditing}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* Gender */}
             <FormField
               control={form.control}
               name="gender"
               render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem>
                   <FormLabel className="text-lg font-medium flex items-center">
                     <Users className="w-5 h-5 mr-2" />
                     Gender
@@ -190,13 +243,13 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
                       className="flex flex-col space-y-1"
                       disabled={!isEditing}
                     >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="Male" />
                         </FormControl>
                         <FormLabel className="font-normal">Male</FormLabel>
                       </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormItem className="flex items-center space-x-3">
                         <FormControl>
                           <RadioGroupItem value="Female" />
                         </FormControl>
@@ -209,6 +262,7 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
               )}
             />
 
+            {/* Part */}
             <FormField
               control={form.control}
               name="part"
@@ -241,6 +295,7 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
               )}
             />
 
+            {/* Programme */}
             <FormField
               control={form.control}
               name="programme"
@@ -278,3 +333,5 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({
 };
 
 export default StudentProfileForm;
+
+
