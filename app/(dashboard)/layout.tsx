@@ -17,8 +17,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!loading) {
       if (!user) {
         router.push('/login');
-      } else if (role !== 'admin') {
-        router.push('/unauthorized');
       } else {
         setIsAuthorized(true);
       }
@@ -31,7 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthProvider>
+    
       <SidebarProvider>
         <AppSidebar />
         <main className="w-full h-screen">
@@ -40,6 +38,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </SidebarProvider>
-    </AuthProvider>
+  
   );
 }

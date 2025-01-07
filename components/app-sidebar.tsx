@@ -5,15 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Archive,
-  Building2,
   CircleCheck,
   CloudUpload,
-  Files,
-  Home,
   Inbox,
   LogOut,
   SquareArrowOutUpRightIcon,
-  User,
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,69 +25,70 @@ import {
 
 import Image from "next/image";
 import Logo from "@/public/hit_logo.png";
-
-// This would come from your auth system
-let userRole = "admin"; // or 'admin'
+import { useAuth } from "@/hooks/useAuth"; // Import the auth hook
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export function AppSidebar() {
+  const { user, role, loading } = useAuth();
+  const router = useRouter();
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push("/login");
+      } else {
+        setUserRole(role);
+      }
+    }
+  }, [user, role, loading, router]);
 
   const navigationItems = React.useMemo(() => {
+    if (!userRole) return [];
+
     const items = [];
 
     // Add role-specific items
-    if (userRole === "student") {
-      items.push({
-        title: "Profile",
-        icon: UserRound,
-        href: "/student/profile",
-      });
-      items.push({
-        title: "Application",
-        icon: SquareArrowOutUpRightIcon,
-        href: "/student/application",
-      });
+    if (userRole === "user") {
+      items.push(
+        { title: "Profile", icon: UserRound, href: "/student/profile" },
+        { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" }
+      );
     } else if (userRole === "admin") {
-      items.push({
-        title: "Applications",
-        icon: Inbox,
-        href: "/admin/applications",
-      });
-      items.push({
-        title: "Accepted",
-        icon: CircleCheck,
-        href: "/admin/accepted",
-      });
-      items.push({
-        title: "Archived",
-        icon: Archive,
-        href: "/admin/archived",
-      });
+      items.push(
+        { title: "Applications", icon: Inbox, href: "/admin/applications" },
+        { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
+        { title: "Archived", icon: Archive, href: "/admin/archived" }
+      );
     }
-    items.push({
-      title: "Published",
-      icon: CloudUpload,
-      href: "/accepted-students",
-    });
+
+    // Common items
+    items.push({ title: "Published", icon: CloudUpload, href: "/accepted-students" });
 
     return items;
-  }, []);
+  }, [userRole]);
+
+  if (loading || !userRole) {
+    return null; 
+  }
 
   return (
-    <Sidebar className="w-[150px] ">
+    <Sidebar className="w-[150px]">
       <SidebarHeader className="py-6 px-4">
         <div className="flex items-center justify-center">
           <Image src={Logo} alt="logo" width={200} height={200} />
         </div>
       </SidebarHeader>
-      <SidebarContent className=" py-2">
-        <SidebarMenu className="space-y-4 ">
+      <SidebarContent className="py-2">
+        <SidebarMenu className="space-y-4">
           {navigationItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton asChild isActive={pathname === item.href}>
                 <Link href={item.href} className="w-full h-fit">
                   <div className="flex flex-col items-center w-full space-y-1">
-                    <item.icon className=" h-6 w-6 text-blue-900" />
+                    <item.icon className="h-6 w-6 text-blue-900" />
                     <p className="text-xs">{item.title}</p>
                   </div>
                 </Link>
