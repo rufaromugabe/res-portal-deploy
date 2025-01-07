@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export function AppSidebar() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, signOut } = useAuth(); // Include logout function from useAuth
   const router = useRouter();
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -45,12 +45,20 @@ export function AppSidebar() {
     }
   }, [user, role, loading, router]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut; 
+      router.push("/login"); 
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   const navigationItems = React.useMemo(() => {
     if (!userRole) return [];
 
     const items = [];
 
-    // Add role-specific items
     if (userRole === "user") {
       items.push(
         { title: "Profile", icon: UserRound, href: "/student/profile" },
@@ -71,7 +79,7 @@ export function AppSidebar() {
   }, [userRole]);
 
   if (loading || !userRole) {
-    return null; 
+    return null;
   }
 
   return (
@@ -101,7 +109,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </Button>

@@ -74,7 +74,7 @@ export function useAuth() {
         if (userRole === 'admin') {
           router.push('/admin');
         } else {
-          router.push('/profile');
+          router.push('/student/profile');
         }
       }
     } catch (error) {

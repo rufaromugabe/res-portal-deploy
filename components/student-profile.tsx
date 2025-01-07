@@ -57,7 +57,7 @@ const StudentProfileSchema = z.object({
 
 type FormValues = z.infer<typeof StudentProfileSchema>;
 
-const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({ profile }) => {
+const StudentProfileForm: React.FC<{}> = ({ }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [authDetails, setAuthDetails] = useState({
     userName: "",
@@ -68,11 +68,11 @@ const StudentProfileForm: React.FC<{ profile: StudentProfile }> = ({ profile }) 
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentProfileSchema),
     defaultValues: {
-      phone: profile.phone || "",
-      regNumber: profile.regNumber || "",
-      gender: profile.gender,
-      part: profile.part,
-      programme: profile.programme || "",
+      phone: "",
+      regNumber: "",
+      gender: "Male",
+      part: "1",
+      programme: "",
     },
   });
 
