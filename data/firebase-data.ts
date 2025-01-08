@@ -53,7 +53,7 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
           phone: studentData.phone || "",
           status: applicationData.status || "Pending",  
           submittedAt: applicationData.submittedAt
-  ? new Date(applicationData.submittedAt).toLocaleDateString("en-GB")  
+  ? new Date(applicationData.submittedAt).toLocaleString()
   : "",
 
         };
