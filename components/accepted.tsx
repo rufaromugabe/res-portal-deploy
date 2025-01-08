@@ -1,19 +1,16 @@
 "use client";
-
 import { useState, useEffect, useMemo } from "react";
 import { BarChart2, Users, PieChart, Printer, Upload } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { fetchAllApplications } from "@/data/applications-firebase";
-import { setDoc, collection, getFirestore ,doc} from "firebase/firestore";
+import { fetchAllApplications } from "@/data/firebase-data";
+import { setDoc, collection, getFirestore, doc } from "firebase/firestore";
+import { Pie, Bar } from "react-chartjs-2";
+import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
+
+// Register ChartJS components
+ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
 
 const Accepted = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -88,8 +85,34 @@ const Accepted = () => {
       setPublishing(false);
     }
   };
+
   const handlePrint = () => {
     window.print();
+  };
+
+  // Pie chart data
+  const genderData = {
+    labels: ["Male", "Female"],
+    datasets: [
+      {
+        data: [statistics.totalMales, statistics.totalFemales],
+        backgroundColor: ["#4F46E5", "#F43F5E"],
+      },
+    ],
+  };
+
+  // Bar chart data
+  const partData = {
+    labels: ["Part 1", "Part 2", "Part 3", "Part 4"],
+    datasets: [
+      {
+        label: "Students",
+        data: [statistics.perPart[1], statistics.perPart[2], statistics.perPart[3], statistics.perPart[4]],
+        backgroundColor: "#10B981",
+        borderColor: "#059669",
+        borderWidth: 1,
+      },
+    ],
   };
 
   if (loading) {
@@ -110,21 +133,11 @@ const Accepted = () => {
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <h4 className="text-sm font-medium text-gray-500 mb-2">Gender Distribution</h4>
-            <p className="text-lg font-semibold">
-              Males: {statistics.totalMales} | Females: {statistics.totalFemales}
-            </p>
-            <PieChart className="h-8 w-8 text-indigo-500" />
+            <Pie data={genderData} />
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <h4 className="text-sm font-medium text-gray-500 mb-2">Part Distribution</h4>
-            <ul className="text-lg">
-              {Object.entries(statistics.perPart).map(([part, count]) => (
-                <li key={part}>
-                  Part {part}: {count} students
-                </li>
-              ))}
-            </ul>
-            <BarChart2 className="h-8 w-8 text-green-500" />
+            <Bar data={partData} />
           </div>
         </div>
       </div>
@@ -152,7 +165,7 @@ const Accepted = () => {
       </div>
 
       {/* Table */}
-      <Table>
+      <Table className="min-w-full border-separate border-spacing-y-2">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -163,7 +176,7 @@ const Accepted = () => {
         </TableHeader>
         <TableBody>
           {acceptedApplications.map((app) => (
-            <TableRow key={app.regNumber}>
+            <TableRow key={app.regNumber} className="hover:bg-gray-50">
               <TableCell>{app.name}</TableCell>
               <TableCell>{app.regNumber}</TableCell>
               <TableCell>{app.gender}</TableCell>

@@ -12,7 +12,7 @@ import {
 } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { fetchAllApplications } from "@/data/applications-firebase";
+import { fetchAllApplications } from "@/data/firebase-data";
 
 const Archived = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");

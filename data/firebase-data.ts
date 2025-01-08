@@ -69,11 +69,7 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
   }
 };
 
-/**
- * Update the status of an application in Firebase
- * @param regNumber The registration number of the student
- * @param status The new status to set (Accepted or Archived)
- */
+
 export const updateApplicationStatus = async (regNumber: string, status:"Pending" | "Accepted" | "Archived") => {
   try {
     const applicationRef = doc(db, "applications", regNumber);
@@ -82,4 +78,11 @@ export const updateApplicationStatus = async (regNumber: string, status:"Pending
   } catch (error) {
     console.error("Error updating application status:", error);
   }
+};
+export const fetchPublishedStudents = async () => {
+  const querySnapshot = await getDocs(collection(db, "PublishedStudents"));
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 };
