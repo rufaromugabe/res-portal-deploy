@@ -1,8 +1,9 @@
-import PublishedAccepted from "@/components/published-accepted";
+import PublishedStudents from "@/components/published-accepted";
+import P from "@/components/published-accepted";
 import React from "react";
 
 const page = () => {
-  return <PublishedAccepted />;
+  return <PublishedStudents/>;
 };
 
 export default page;
