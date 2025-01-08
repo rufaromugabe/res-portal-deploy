@@ -25,12 +25,12 @@ import {
 
 import Image from "next/image";
 import Logo from "@/public/hit_logo.png";
-import { useAuth } from "@/hooks/useAuth"; // Import the auth hook
+import { useAuth, } from "@/hooks/useAuth"; 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export function AppSidebar() {
-  const { user, role, loading, signOut } = useAuth(); // Include logout function from useAuth
+  const { user, role, loading, signOut: signOutUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await signOut; 
+      await signOutUser(); 
       router.push("/login"); 
     } catch (error) {
       console.error("Logout failed:", error);

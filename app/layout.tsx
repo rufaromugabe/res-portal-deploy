@@ -22,9 +22,9 @@ export default function RootLayout({
         <AuthProvider>
           <ToastContainer />
           <main className="w-full h-screen">
-            <div className="h-[98%] w-[99%] bg-white rounded-2xl border border-gray-200 shadow-lg mt-2">
+            
               {children}
-            </div>
+          
           </main>
         </AuthProvider>
       </body>

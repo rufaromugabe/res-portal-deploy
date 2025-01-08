@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from "react";
+import { toast } from 'react-toastify'
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
@@ -39,7 +40,7 @@ export interface StudentProfile {
   name: string;
   email: string;
   phone?: string;
-  regNumber?: string;
+  regNumber: string;
   gender?: "Male" | "Female";
   part?: "1" | "2" | "3" | "4" | "5";
   programme?: string;
@@ -117,22 +118,23 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
   }, [authDetails.regNumber, form]);
 
   const onSubmit = async (data: FormValues) => {
-    console.log("Form submitted:", data);
+    
     try {
-      const userDoc = doc(db, "students", authDetails.regNumber); // Use regNumber as the document ID
+      const userDoc = doc(db, "students", authDetails.regNumber);
       await setDoc(
         userDoc,
         {
           ...data,
-          regNumber: authDetails.regNumber, // Ensure regNumber is stored
-          email: authDetails.userEmail,    // Ensure email is stored
+          name: authDetails.userName,
+          regNumber: authDetails.regNumber,
+          email: authDetails.userEmail,
         },
         { merge: true }
       );
-      console.log("Profile updated successfully");
+     toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (error) {
-      console.error("Error updating profile:", error);
+      toast.success("Failed to update profile");
     }
   };
 
@@ -239,7 +241,7 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value} // Use field.value to bind the current value
                       className="flex flex-col space-y-1"
                       disabled={!isEditing}
                     >
@@ -274,7 +276,7 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
                   </FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value} // Use field.value to bind the current value
                     disabled={!isEditing}
                   >
                     <FormControl>
@@ -294,6 +296,7 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
                 </FormItem>
               )}
             />
+
 
             {/* Programme */}
             <FormField
