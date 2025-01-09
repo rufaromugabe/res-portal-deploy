@@ -1,7 +1,10 @@
 import React from "react";
+import LoginPage from "./login/page";
 
 const page = () => {
-  return <div className="bg-black">page</div>;
+  return (
+    <LoginPage />
+  );
 };
 
 export default page;

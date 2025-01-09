@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { fetchAllApplications } from "@/data/firebase-data";
-import { setDoc, collection, getFirestore, doc } from "firebase/firestore";
+import { setDoc, collection, getFirestore, doc, getDocs, deleteDoc } from "firebase/firestore";
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
+import { toast } from "react-toastify";
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
@@ -95,11 +96,17 @@ const Accepted = () => {
   const handlePublish = async () => {
     if (publishing) return; // Prevent duplicate submissions
     setPublishing(true);
-
+  
     const db = getFirestore();
-
+    const publishedCollectionRef = collection(db, "PublishedStudents");
+  
     try {
-      // Use regNumber as the document ID
+      // Fetch all existing documents in the collection and delete them
+      const existingDocs = await getDocs(publishedCollectionRef);
+      const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+  
+      // Publish the new list
       const publishPromises = acceptedApplications.map((app) =>
         setDoc(doc(db, "PublishedStudents", app.regNumber), {
           name: app.name,
@@ -107,16 +114,19 @@ const Accepted = () => {
           regNumber: app.regNumber,
         })
       );
-
+  
       await Promise.all(publishPromises);
-      alert("Published list successfully!");
+      toast.success("Published list successfully!");
+      
     } catch (error) {
       console.error("Error publishing list:", error);
-      alert("Failed to publish list. Please try again.");
+      toast.error("Failed to publish list. Please try again.");
+      
     } finally {
       setPublishing(false);
     }
   };
+  
 
   const handlePrint = () => {
     window.print();

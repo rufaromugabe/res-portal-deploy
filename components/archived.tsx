@@ -14,6 +14,23 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { fetchAllApplications } from "@/data/firebase-data";
 
+const SkeletonRow = () => (
+  <TableRow>
+    <TableCell>
+      <div className="h-4 bg-gray-300 rounded-md animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-gray-300 rounded-md animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-gray-300 rounded-md animate-pulse"></div>
+    </TableCell>
+    <TableCell>
+      <div className="h-4 bg-gray-300 rounded-md animate-pulse"></div>
+    </TableCell>
+  </TableRow>
+);
+
 const Archived = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [applications, setApplications] = useState<any[]>([]);
@@ -44,20 +61,13 @@ const Archived = () => {
     );
   }, [applications, searchQuery]);
 
-
-
   const handlePrint = () => {
     window.print();
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
-    <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">Archived Applications</h2>
-
 
       {/* Search and Print */}
       <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -71,10 +81,10 @@ const Archived = () => {
           <Printer className="mr-2 h-5 w-5" />
           Print as PDF
         </Button>
-
       </div>
+
       {/* Table */}
-      <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="max-w-6xl mx-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -85,16 +95,23 @@ const Archived = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {archivedApplications.map((app) => (
-              <TableRow key={app.regNumber}>
-                <TableCell>{app.name}</TableCell>
-                <TableCell>{app.regNumber}</TableCell>
-                <TableCell>{app.gender}</TableCell>
-                <TableCell>{app.part}</TableCell>
-              </TableRow>
-            ))}
+            {loading
+              ? Array(5) // Render 5 skeleton rows as a placeholder
+                  .fill(null)
+                  .map((_, index) => <SkeletonRow key={index} />)
+              : archivedApplications.map((app) => (
+                  <TableRow key={app.regNumber}>
+                    <TableCell>{app.name}</TableCell>
+                    <TableCell>{app.regNumber}</TableCell>
+                    <TableCell>{app.gender}</TableCell>
+                    <TableCell>{app.part}</TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
+        {!loading && archivedApplications.length === 0 && (
+          <p className="text-center mt-4 text-gray-500">No archived applications found.</p>
+        )}
       </div>
     </div>
   );

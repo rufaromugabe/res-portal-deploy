@@ -13,13 +13,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from 'react-toastify';
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
 import { StudentProfile } from "./student-profile";
 
+// Define Zod schema for validation
 const StudentApplicationSchema = z.object({
   reason: z
     .string()
@@ -39,6 +39,7 @@ interface ApplicationData {
 
 const StudentApplicationForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // State to manage loading
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
 
@@ -74,6 +75,8 @@ const StudentApplicationForm: React.FC = () => {
           }
         } catch (error) {
           console.error("Error fetching data:", error);
+        } finally {
+          setIsLoading(false); // Loading is complete
         }
       }
     };
@@ -143,9 +146,25 @@ const StudentApplicationForm: React.FC = () => {
     }
   };
 
+  // Skeleton Loading UI
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm animate-pulse">
+        <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto mb-4"></div>
+        <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto mb-8"></div>
+        <div className="space-y-4">
+          <div className="h-4 bg-gray-300 rounded"></div>
+          <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-300 rounded"></div>
+        </div>
+        <div className="h-12 bg-gray-300 rounded mt-8"></div>
+      </div>
+    );
+  }
+
   if (application) {
     return (
-      <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+      <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
         <h2 className="text-3xl font-bold mb-6 text-center">
           Your Application
         </h2>
@@ -183,7 +202,7 @@ const StudentApplicationForm: React.FC = () => {
   }
 
   return (
-    <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+    <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">
         On-campus Res Application
       </h2>

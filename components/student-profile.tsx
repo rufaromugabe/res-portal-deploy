@@ -1,6 +1,8 @@
 'use client';
 import React, { useEffect, useState } from "react";
-import { toast } from 'react-toastify'
+import Skeleton from "react-loading-skeleton"; // Importing react-loading-skeleton
+import "react-loading-skeleton/dist/skeleton.css"; // Skeleton CSS
+import { toast } from 'react-toastify';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
@@ -58,8 +60,9 @@ const StudentProfileSchema = z.object({
 
 type FormValues = z.infer<typeof StudentProfileSchema>;
 
-const StudentProfileForm: React.FC<{}> = ({ }) => {
+const StudentProfileForm: React.FC<{}> = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
   const [authDetails, setAuthDetails] = useState({
     userName: "",
     userEmail: "",
@@ -77,48 +80,46 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
     },
   });
 
-  // Fetch Auth User Details
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user) {
-      const regNumber = user.email?.split("@")[0] || "";
-      setAuthDetails({
-        userName: user.displayName || "",
-        userEmail: user.email || "",
-        regNumber: regNumber,
-      });
-    }
-  }, []);
-
-  // Fetch Profile Data from Firestore using regNumber
   useEffect(() => {
     const fetchProfile = async () => {
+      setIsLoading(true);
       try {
-        const userDoc = doc(db, "students", authDetails.regNumber); // Use regNumber as the document ID
-        const docSnap = await getDoc(userDoc);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          form.reset({
-            phone: data.phone || "",
-            regNumber: data.regNumber || authDetails.regNumber || "",
-            gender: data.gender,
-            part: data.part,
-            programme: data.programme || "",
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (user) {
+          const regNumber = user.email?.split("@")[0] || "";
+          setAuthDetails({
+            userName: user.displayName || "",
+            userEmail: user.email || "",
+            regNumber,
           });
+
+          const userDoc = doc(db, "students", regNumber);
+          const docSnap = await getDoc(userDoc);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            form.reset({
+              phone: data.phone || "",
+              regNumber: data.regNumber || regNumber,
+              gender: data.gender,
+              part: data.part,
+              programme: data.programme || "",
+            });
+          }
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        toast.error("Error fetching profile");
+      } finally {
+        setIsLoading(false); // Hide loading skeleton
       }
     };
 
-    if (authDetails.regNumber) {
-      fetchProfile();
-    }
-  }, [authDetails.regNumber, form]);
+    fetchProfile();
+  }, [form]);
 
   const onSubmit = async (data: FormValues) => {
-    
     try {
       const userDoc = doc(db, "students", authDetails.regNumber);
       await setDoc(
@@ -131,10 +132,10 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
         },
         { merge: true }
       );
-     toast.success("Profile updated successfully");
+      toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (error) {
-      toast.success("Failed to update profile");
+      toast.error("Failed to update profile");
     }
   };
 
@@ -145,6 +146,56 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
       setIsEditing(true);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        <Skeleton width={200} />
+      </h2>
+      <p className="text-gray-600 mb-8 text-center">
+        <Skeleton width={300} />
+      </p>
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <Skeleton height={20} width="50%" />
+            <Skeleton height={40} />
+          </div>
+          <div className="space-y-2">
+            <Skeleton height={20} width="50%" />
+            <Skeleton height={40} />
+          </div>
+          <div className="space-y-2">
+            <Skeleton height={20} width="50%" />
+            <Skeleton height={40} />
+          </div>
+          <div className="space-y-2">
+            <Skeleton height={20} width="50%" />
+            <Skeleton height={40} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Skeleton height={20} width="50%" />
+          <Skeleton height={40} />
+        </div>
+        <div className="space-y-2">
+          <Skeleton height={20} width="50%" />
+          <Skeleton height={40} />
+        </div>
+        <div className="space-y-2">
+          <Skeleton height={20} width="50%" />
+          <Skeleton height={40} />
+        </div>
+        <div className="space-y-2">
+          <Skeleton height={20} width="50%" />
+          <Skeleton height={40} />
+        </div>
+        <Skeleton height={50} width="100%" />
+      </div>
+    </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-sm">
@@ -336,5 +387,3 @@ const StudentProfileForm: React.FC<{}> = ({ }) => {
 };
 
 export default StudentProfileForm;
-
-

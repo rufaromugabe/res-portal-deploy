@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase"; 
 import { collection, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
-import { deoptional } from "zod";
+
 
 // Define the type for the application
 export type Applications = {
@@ -86,3 +86,4 @@ export const fetchPublishedStudents = async () => {
     ...doc.data(),
   }));
 };
+

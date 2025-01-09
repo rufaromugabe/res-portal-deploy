@@ -47,22 +47,19 @@ export function useAuth() {
 
     return () => unsubscribe();
   }, []);
-
   const signIn = async () => {
     const provider = new GoogleAuthProvider();
   
-    // Restrict to a specific domain
-    provider.setCustomParameters({
-      hd: 'hit.ac.zw', 
-    });
+    // List of allowed domains
+    const allowedDomains = ['hit.ac.zw', 'gmail.com'];
   
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
   
       if (user) {
-        // Check if the user's email is within the allowed domain
-        if (user.email && user.email.endsWith('@hit.ac.zw')) {
+        // Check if the user's email matches any allowed domain
+        if (user.email && allowedDomains.some((domain) => user.email?.endsWith(`@${domain}`) ?? false)) {
           const userRef = doc(db, 'users', user.uid);
           let userRole: UserRole = 'user';
   
@@ -86,9 +83,9 @@ export function useAuth() {
             router.push('/student/profile');
           }
         } else {
-          // If the email does not match the domain, sign out and show error
+          // If the email does not match any allowed domain, sign out and show error
           await signOut(auth);
-          toast.error('Sign-in is restricted to @example.com accounts');
+          toast.error('Sign-in is restricted to specific domains');
         }
       }
     } catch (error) {
@@ -97,7 +94,6 @@ export function useAuth() {
     }
   };
   
-
   const signOutUser = async () => {
     try {
       await signOut(auth);
