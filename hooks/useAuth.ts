@@ -47,45 +47,34 @@ export function useAuth() {
 
     return () => unsubscribe();
   }, []);
+
   const signIn = async () => {
     const provider = new GoogleAuthProvider();
-  
-    // List of allowed domains
-    const allowedDomains = ['hit.ac.zw', 'gmail.com'];
-  
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-  
       if (user) {
-        // Check if the user's email matches any allowed domain
-        if (user.email && allowedDomains.some((domain) => user.email?.endsWith(`@${domain}`) ?? false)) {
-          const userRef = doc(db, 'users', user.uid);
-          let userRole: UserRole = 'user';
-  
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            userRole = userSnap.data().role as UserRole;
-          } else {
-            await setDoc(userRef, {
-              displayName: user.displayName,
-              email: user.email,
-              role: 'user',
-              createdAt: new Date().toISOString(),
-            });
-            toast.success('Welcome to your new account!');
-          }
-  
-          setRole(userRole);
-          if (userRole === 'admin') {
-            router.push('/admin');
-          } else {
-            router.push('/student/profile');
-          }
+        const userRef = doc(db, 'users', user.uid);
+        let userRole: UserRole = 'user';
+
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          userRole = userSnap.data().role as UserRole;
         } else {
-          // If the email does not match any allowed domain, sign out and show error
-          await signOut(auth);
-          toast.error('Sign-in is restricted to specific domains');
+          await setDoc(userRef, {
+            displayName: user.displayName,
+            email: user.email,
+            role: 'user',
+            createdAt: new Date().toISOString(),
+          });
+          toast.success('Welcome to your new account!');
+        }
+
+        setRole(userRole);
+        if (userRole === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/student/profile');
         }
       }
     } catch (error) {
@@ -93,7 +82,7 @@ export function useAuth() {
       toast.error('Failed to sign in with Google');
     }
   };
-  
+
   const signOutUser = async () => {
     try {
       await signOut(auth);
