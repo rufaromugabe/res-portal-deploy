@@ -22,18 +22,18 @@ import { Separator } from "./ui/separator";
 import { updateApplicationStatus } from "@/data/firebase-data";
 
 // Skeleton Loader Component
-const SkeletonLoader = ({ rows = 5, cols = 10 }) => {
+const SkeletonLoader = ({ rows = 10, cols = 10 }) => {
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse  max-w-6xl mx-auto ">
       {[...Array(rows)].map((_, rowIndex) => (
         <div
           key={rowIndex}
-          className="grid grid-cols-10 gap-4 mb-4 items-center"
+          className="grid grid-cols-10 gap-4 mb-4 items-center p-2"
         >
           {[...Array(cols)].map((_, colIndex) => (
             <div
               key={colIndex}
-              className="h-4 bg-gray-200 rounded-md col-span-1"
+              className="h-8 bg-gray-200 rounded-md col-span-1"
             ></div>
           ))}
         </div>

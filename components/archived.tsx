@@ -44,7 +44,7 @@ const Archived = () => {
     );
   }, [applications, searchQuery]);
 
- 
+
 
   const handlePrint = () => {
     window.print();
@@ -58,7 +58,7 @@ const Archived = () => {
     <div className="w-full bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">Archived Applications</h2>
 
-     
+
       {/* Search and Print */}
       <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <Input
@@ -71,29 +71,31 @@ const Archived = () => {
           <Printer className="mr-2 h-5 w-5" />
           Print as PDF
         </Button>
-      </div>
 
+      </div>
       {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Reg Number</TableHead>
-            <TableHead>Gender</TableHead>
-            <TableHead>Part</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {archivedApplications.map((app) => (
-            <TableRow key={app.regNumber}>
-              <TableCell>{app.name}</TableCell>
-              <TableCell>{app.regNumber}</TableCell>
-              <TableCell>{app.gender}</TableCell>
-              <TableCell>{app.part}</TableCell>
+      <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Reg Number</TableHead>
+              <TableHead>Gender</TableHead>
+              <TableHead>Part</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {archivedApplications.map((app) => (
+              <TableRow key={app.regNumber}>
+                <TableCell>{app.name}</TableCell>
+                <TableCell>{app.regNumber}</TableCell>
+                <TableCell>{app.gender}</TableCell>
+                <TableCell>{app.part}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

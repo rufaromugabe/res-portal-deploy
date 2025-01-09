@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useMemo } from "react";
 import { BarChart2, Users, PieChart, Printer, Upload } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -11,6 +12,37 @@ import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, Li
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
+
+const Skeleton = ({ rows = 5 }) => (
+  <div className="w-full max-w-6xl mx-auto p-4">
+    {[...Array(rows)].map((_, index) => (
+      <div key={index} className="animate-pulse flex space-x-4 mb-4">
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+      </div>
+    ))}
+  </div>
+);
+
+const StatisticsSkeleton = () => (
+  <>
+    <div className="max-w-6xl mx-auto mb-4 pt-10">
+    <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse mx-auto pt-10"></div>
+     
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+      {[...Array(3)].map((_, index) => (
+        <div key={index} className="bg-white p-4 rounded-lg shadow-sm animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-20 bg-gray-200 rounded mt-4"></div>
+        </div>
+      ))}
+    </div>
+  </>
+);
 
 const Accepted = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -63,9 +95,9 @@ const Accepted = () => {
   const handlePublish = async () => {
     if (publishing) return; // Prevent duplicate submissions
     setPublishing(true);
-  
+
     const db = getFirestore();
-  
+
     try {
       // Use regNumber as the document ID
       const publishPromises = acceptedApplications.map((app) =>
@@ -75,7 +107,7 @@ const Accepted = () => {
           regNumber: app.regNumber,
         })
       );
-  
+
       await Promise.all(publishPromises);
       alert("Published list successfully!");
     } catch (error) {
@@ -116,28 +148,37 @@ const Accepted = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <StatisticsSkeleton />
+        <Skeleton rows={8} />
+      </div>
+    );
   }
 
   return (
-    <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">Accepted Applications</h2>
 
       {/* Statistics */}
-      <div className="max-w-6xl mx-auto mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-2">Total Accepted Students</h4>
-            <p className="text-2xl font-bold">{statistics.totalAccepted}</p>
-            <Users className="h-8 w-8 text-blue-500" />
+            <h4 className="text-sm font-medium text-gray-500 mb-1">Total Accepted Students</h4>
+            <p className="text-xl font-bold">{statistics.totalAccepted}</p>
+            <Users className="h-6 w-6 text-blue-500" />
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-2">Gender Distribution</h4>
-            <Pie data={genderData} />
+            <h4 className="text-sm font-medium text-gray-500 mb-1">Gender Distribution</h4>
+            <div className="h-32">
+              <Pie data={genderData} />
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-2">Part Distribution</h4>
-            <Bar data={partData} />
+            <h4 className="text-sm font-medium text-gray-500 mb-1">Part Distribution</h4>
+            <div className="h-32">
+              <Bar data={partData} />
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +206,7 @@ const Accepted = () => {
       </div>
 
       {/* Table */}
-      <Table className="min-w-full border-separate border-spacing-y-2">
+      <Table className="max-w-6xl mx-auto border-separate border-spacing-y-2">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>

@@ -25,9 +25,7 @@ const page = () => {
   }, [user, loading, role, router]);
 
   
-  if (loading || !isAuthorized) {
-    return <LoadingSpinner />;
-  }
+
   return<AuthProvider>
   <Accepted />
   </AuthProvider>;

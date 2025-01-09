@@ -3,7 +3,6 @@ import React from "react";
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LoadingSpinner } from '@/components/loading-spinner';
 import { AuthProvider } from "@/components/auth-provider";
 import Applications from "@/components/applications";
 
@@ -25,9 +24,7 @@ const page = () => {
   }, [user, loading, role, router]);
 
   
-  if (loading || !isAuthorized) {
-    return <LoadingSpinner />;
-  }
+  
   return<AuthProvider>
   <Applications />
   </AuthProvider>;
