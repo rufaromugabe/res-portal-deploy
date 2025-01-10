@@ -86,7 +86,7 @@ const StudentApplicationForm: React.FC = () => {
 
   const onSubmit = async (data: FormValues) => {
     if (!profile) {
-      toast.error("Profile data is missing. Please reload the page.");
+      toast.error("Profile data is missing. Please update your profile first.");
       return;
     }
 
