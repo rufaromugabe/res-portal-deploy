@@ -81,7 +81,8 @@ const Applications = () => {
     }
   };
 
-  const filteredApplications = applications.filter((application) => {
+  const filteredApplications = applications
+  .filter((application) => {
     const partMatch =
       selectedPart === "all" || application.part.toString() === selectedPart;
     const genderMatch =
@@ -93,7 +94,9 @@ const Applications = () => {
       application.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       application.regNumber.toLowerCase().includes(searchQuery.toLowerCase());
     return partMatch && genderMatch && statusMatch && searchMatch;
-  });
+  })
+  .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()); 
+
 
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-sm">

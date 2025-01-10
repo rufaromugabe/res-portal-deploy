@@ -67,7 +67,7 @@ export function useAuth() {
             role: 'user',
             createdAt: new Date().toISOString(),
           });
-          toast.success('Welcome to your new account!');
+          
         }
 
         setRole(userRole);

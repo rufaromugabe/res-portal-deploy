@@ -107,7 +107,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
 
         {/* Right side - Placeholder */}
         <div className="ml-auto flex items-center space-x-4">
-          <p>Welcome, {user?.displayName || "User"}</p>
+          <p> {user?.displayName || "User"}</p>
         </div>
       </header>
 
