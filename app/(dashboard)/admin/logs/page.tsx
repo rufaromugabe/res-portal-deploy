@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AuthProvider } from "@/components/auth-provider";
-import Archived from "@/components/archived";
+import Applications from "@/components/applications";
+import Logs from "@/components/activity-logs";
 
 const page = () => {
   const { user, loading, role } = useAuth();
@@ -26,7 +27,7 @@ const page = () => {
   
   
   return<AuthProvider>
-  <Archived />
+  <Logs />
   </AuthProvider>;
 };
 

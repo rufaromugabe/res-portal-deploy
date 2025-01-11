@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Archive,
   CircleCheck,
   CloudUpload,
@@ -68,7 +69,8 @@ export function AppSidebar() {
       items.push(
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
-        { title: "Archived", icon: Archive, href: "/admin/archived" }
+        { title: "Archived", icon: Archive, href: "/admin/archived" },
+        { title: "Activity logs", icon: Activity, href: "/admin/logs" }
       );
     }
 

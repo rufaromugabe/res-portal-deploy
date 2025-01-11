@@ -13,6 +13,7 @@ import {
   UserRound,
   Menu,
   X,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,7 +75,8 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       items.push(
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
-        { title: "Archived", icon: Archive, href: "/admin/archived" }
+        { title: "Archived", icon: Archive, href: "/admin/archived" },
+        { title: "Activity logs", icon: Activity, href: "/admin/logs" }
       );
     }
 

@@ -5,6 +5,7 @@ import { BarChart2, Users, PieChart, Printer, Upload } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { getAuth } from "firebase/auth";
 import { fetchAllApplications } from "@/data/firebase-data";
 import { setDoc, collection, getFirestore, doc, getDocs, deleteDoc } from "firebase/firestore";
 import { Pie, Bar } from "react-chartjs-2";
@@ -99,6 +100,8 @@ const Accepted = () => {
   
     const db = getFirestore();
     const publishedCollectionRef = collection(db, "PublishedStudents");
+    const activityLogsCollectionRef = collection(db, "ActivityLogs");
+    const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
   
     try {
       // Fetch all existing documents in the collection and delete them
@@ -114,24 +117,44 @@ const Accepted = () => {
           regNumber: app.regNumber,
         })
       );
-  
       await Promise.all(publishPromises);
+  
+      // Save activity log
+      await setDoc(doc(activityLogsCollectionRef), {
+        adminEmail,
+        activity: "Published the list of accepted applications",
+        timestamp: new Date().toISOString(),
+      });
+  
       toast.success("Published list successfully!");
-      
     } catch (error) {
       console.error("Error publishing list:", error);
       toast.error("Failed to publish list. Please try again.");
-      
     } finally {
       setPublishing(false);
     }
   };
   
-
   const handlePrint = () => {
+    const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
+    const db = getFirestore();
+    const activityLogsCollectionRef = collection(db, "ActivityLogs");
+  
+    // Save activity log
+    setDoc(doc(activityLogsCollectionRef), {
+      adminEmail,
+      activity: "Printed the accepted applications list",
+      timestamp: new Date().toISOString(),
+    })
+      .then(() => {
+        console.log("Activity logged successfully.");
+      })
+      .catch((error) => {
+        console.error("Error logging activity:", error);
+      });
+  
     window.print();
   };
-
   // Pie chart data
   const genderData = {
     labels: ["Male", "Female"],
