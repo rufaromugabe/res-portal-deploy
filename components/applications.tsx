@@ -17,11 +17,15 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Input } from "./ui/input";
+import { getAuth } from "firebase/auth";
+import { collection, doc, setDoc, getFirestore } from "firebase/firestore";
 import { fetchAllApplications } from "@/data/firebase-data";
 import { Separator } from "./ui/separator";
 import { updateApplicationStatus } from "@/data/firebase-data";
+import { programmes } from "@/data/programmes";
 
-// Skeleton Loader Component
+
+
 const SkeletonLoader = ({ rows = 10, cols = 10 }) => {
   return (
     <div className="animate-pulse  max-w-6xl mx-auto ">
@@ -46,6 +50,7 @@ const Applications = () => {
   const [selectedPart, setSelectedPart] = useState<string>("all");
   const [selectedGender, setSelectedGender] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedProgramme, setSelectedProgramme] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,34 +74,56 @@ const Applications = () => {
     regNumber: string,
     newStatus: "Accepted" | "Archived" | "Pending"
   ) => {
+    const db = getFirestore();
+    const activityLogsCollectionRef = collection(db, "ActivityLogs");
+    const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
+  
     try {
+      // Find the application and get the current status
+      const application = applications.find((app) => app.regNumber === regNumber);
+      const oldStatus = application?.status || "Unknown";
+  
+      // Update the application status
       await updateApplicationStatus(regNumber, newStatus);
       setApplications((prevApps) =>
         prevApps.map((app) =>
           app.regNumber === regNumber ? { ...app, status: newStatus } : app
         )
       );
+  
+      // Log the status change activity
+      await setDoc(doc(activityLogsCollectionRef), {
+        adminEmail,
+        activity: `Changed status of application`,
+        regNumber,
+        oldStatus,
+        newStatus,
+        timestamp: new Date().toISOString(),
+      });
+  
+      console.log("Status change logged successfully.");
     } catch (error) {
       console.error("Error updating application status:", error);
+      console.error("Failed to log status change activity:", error);
     }
   };
+  
 
-  const filteredApplications = applications
-  .filter((application) => {
+  const filteredApplications = applications.filter((application) => {
     const partMatch =
       selectedPart === "all" || application.part.toString() === selectedPart;
     const genderMatch =
       selectedGender === "all" || application.gender === selectedGender;
     const statusMatch =
       selectedStatus === "all" || application.status === selectedStatus;
+    const programmeMatch =
+      selectedProgramme === "all" || application.programme === selectedProgramme;
     const searchMatch =
       searchQuery === "" ||
       application.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       application.regNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    return partMatch && genderMatch && statusMatch && searchMatch;
-  })
-  .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()); 
-
+    return partMatch && genderMatch && statusMatch && programmeMatch && searchMatch;
+  });
 
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-sm">
@@ -162,6 +189,23 @@ const Applications = () => {
                 <SelectItem value="Pending">Pending</SelectItem>
                 <SelectItem value="Accepted">Accepted</SelectItem>
                 <SelectItem value="Archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Programme:</span>
+            <Select value={selectedProgramme} onValueChange={setSelectedProgramme}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select programme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Programmes</SelectItem>
+                {programmes.map((programme) => (
+                  <SelectItem key={programme.value} value={programme.value}>
+                    {programme.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

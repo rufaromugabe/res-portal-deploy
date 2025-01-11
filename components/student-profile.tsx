@@ -1,4 +1,4 @@
-'use client';
+'use client'; 
 import React, { useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton"; // Importing react-loading-skeleton
 import "react-loading-skeleton/dist/skeleton.css"; // Skeleton CSS
@@ -36,6 +36,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox } from "./ui/combobox";
+import { programmes } from "@/data/programmes";
+
 
 export interface StudentProfile {
   id: string;
@@ -146,6 +149,9 @@ const StudentProfileForm: React.FC<{}> = () => {
       setIsEditing(true);
     }
   };
+
+
+
 
   if (isLoading) {
     return (
@@ -349,7 +355,7 @@ const StudentProfileForm: React.FC<{}> = () => {
             />
 
 
-            {/* Programme */}
+            {/* Programme (Using Combobox) */}
             <FormField
               control={form.control}
               name="programme"
@@ -360,10 +366,11 @@ const StudentProfileForm: React.FC<{}> = () => {
                     Programme
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter your programme"
-                      {...field}
-                      className="text-lg"
+                    <Combobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={programmes}
+                      placeholder="Select your programme"
                       disabled={!isEditing}
                     />
                   </FormControl>
