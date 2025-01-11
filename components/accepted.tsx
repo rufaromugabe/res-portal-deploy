@@ -82,7 +82,7 @@ const Accepted = () => {
       totalMales: 0,
       totalFemales: 0,
       totalAccepted: acceptedApplications.length,
-      perPart: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      perPart: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
     };
 
     acceptedApplications.forEach((app) => {
@@ -166,19 +166,38 @@ const Accepted = () => {
     ],
   };
 
-  // Bar chart data
-  const partData = {
-    labels: ["Part 1", "Part 2", "Part 3", "Part 4"],
-    datasets: [
-      {
-        label: "Students",
-        data: [statistics.perPart[1], statistics.perPart[2], statistics.perPart[3], statistics.perPart[4]],
-        backgroundColor: "#10B981",
-        borderColor: "#059669",
-        borderWidth: 1,
-      },
-    ],
-  };
+// Bar chart data
+const partData = {
+  labels: ["Part 1", "Part 2", "Part 3", "Part 4", "Part 5"],
+  datasets: [
+    {
+      label: "Students",
+      data: [
+        statistics.perPart[1],
+        statistics.perPart[2],
+        statistics.perPart[3],
+        statistics.perPart[4],
+        statistics.perPart[5]
+      ],
+      backgroundColor: [
+        "#10B981",  
+        "#3B82F6",  
+        "#F59E0B",  
+        "#9333EA",  
+        "#F43F5E"   
+      ],
+      borderColor: [
+        "#059669", 
+        "#2563EB",  
+        "#D97706",  
+        "#7C3AED", 
+        "#DB2777"   
+      ],
+      borderWidth: 1,
+    },
+  ],
+};
+
 
   if (loading) {
     return (

@@ -160,6 +160,7 @@ const Applications = () => {
                 <SelectItem value="2">Part 2</SelectItem>
                 <SelectItem value="3">Part 3</SelectItem>
                 <SelectItem value="4">Part 4</SelectItem>
+                <SelectItem value="5">Part 5</SelectItem>
               </SelectContent>
             </Select>
           </div>
