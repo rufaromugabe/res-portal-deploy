@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -61,6 +59,11 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     setIsOpen((prev) => !prev);
   };
 
+  const closeDrawerAndNavigate = (href: string) => {
+    setIsOpen(false); // Close the drawer
+    router.push(href); // Navigate to the selected link
+  };
+
   const navigationItems = React.useMemo(() => {
     if (!userRole) return [];
 
@@ -101,7 +104,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
           className="flex items-center space-x-2 md:hidden"
         >
           <Menu className="h-10 w-10" />
-       
         </Button>
 
         {/* App Title */}
@@ -141,12 +143,15 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
             {navigationItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton asChild isActive={pathname === item.href}>
-                  <Link href={item.href} className="w-full h-fit">
+                  <button
+                    onClick={() => closeDrawerAndNavigate(item.href)} // Close the drawer and navigate
+                    className="w-full h-fit"
+                  >
                     <div className="flex flex-col items-center w-full space-y-1">
                       <item.icon className="h-6 w-6 text-blue-900" />
                       <p className="text-xs">{item.title}</p>
                     </div>
-                  </Link>
+                  </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
