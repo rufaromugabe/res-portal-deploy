@@ -118,13 +118,11 @@ const AdminAccountManagement = () => {
     );
   }
 
-  if (role !== 'admin') {
-    return <p>Access denied. Admins only.</p>;
-  }
+
 
   return (
     <div className="max-w-6xl mx-auto h-full p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Admin Account Management</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">User Account Management</h1>
 
       {/* Search Bar */}
       <div className="relative mb-6">
@@ -179,12 +177,7 @@ const AdminAccountManagement = () => {
         </Table>
       </div>
 
-      <button
-        onClick={signOut}
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Sign Out
-      </button>
+
     </div>
   );
 };

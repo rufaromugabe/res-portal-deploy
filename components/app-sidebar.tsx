@@ -12,6 +12,7 @@ import {
   LogOut,
   SquareArrowOutUpRightIcon,
   UserRound,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +68,7 @@ export function AppSidebar() {
       );
     } else if (userRole === "admin") {
       items.push(
+        { title: "Accounts", icon: Users, href: "/admin/accounts" },
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },

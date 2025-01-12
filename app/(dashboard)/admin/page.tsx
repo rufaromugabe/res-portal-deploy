@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { AuthProvider } from "@/components/auth-provider";
+import Applications from "@/components/applications";
 
 const page = () => {
   const { user, loading, role } = useAuth();
@@ -29,7 +30,7 @@ const page = () => {
     return <LoadingSpinner />;
   }
   return<AuthProvider>
-  <Accepted />
+  <Applications />
   </AuthProvider>;
 };
 

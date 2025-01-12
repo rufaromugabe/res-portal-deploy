@@ -7,6 +7,7 @@ import {
   CloudUpload,
   Inbox,
   LogOut,
+  Users,
   SquareArrowOutUpRightIcon,
   UserRound,
   Menu,
@@ -76,6 +77,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       );
     } else if (userRole === "admin") {
       items.push(
+        { title: "Accounts", icon: Users, href: "/admin/accounts" },
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
