@@ -135,83 +135,90 @@ const Applications = () => {
         far.
       </p>
 
-      {/* Search and Filters */}
-      <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or registration number..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
-          />
-        </div>
+{/* Search and Filters */}
+<div className="max-w-6xl mx-auto mb-6 space-y-4">
+  {/* Search Bar */}
+  <div className="relative">
+    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    <Input
+      placeholder="Search by name or registration number..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      className="pl-8"
+    />
+  </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Part:</span>
-            <Select value={selectedPart} onValueChange={setSelectedPart}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Select part" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Parts</SelectItem>
-                <SelectItem value="1">Part 1</SelectItem>
-                <SelectItem value="2">Part 2</SelectItem>
-                <SelectItem value="3">Part 3</SelectItem>
-                <SelectItem value="4">Part 4</SelectItem>
-                <SelectItem value="5">Part 5</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+  {/* Filters */}
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {/* Part Filter */}
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Part:</span>
+      <Select value={selectedPart} onValueChange={setSelectedPart}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select part" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Parts</SelectItem>
+          <SelectItem value="1">Part 1</SelectItem>
+          <SelectItem value="2">Part 2</SelectItem>
+          <SelectItem value="3">Part 3</SelectItem>
+          <SelectItem value="4">Part 4</SelectItem>
+          <SelectItem value="5">Part 5</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Gender:</span>
-            <Select value={selectedGender} onValueChange={setSelectedGender}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Select gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    {/* Gender Filter */}
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Gender:</span>
+      <Select value={selectedGender} onValueChange={setSelectedGender}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select gender" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="Male">Male</SelectItem>
+          <SelectItem value="Female">Female</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Status:</span>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Accepted">Accepted</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    {/* Status Filter */}
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Status:</span>
+      <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="Pending">Pending</SelectItem>
+          <SelectItem value="Accepted">Accepted</SelectItem>
+          <SelectItem value="Archived">Archived</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Programme:</span>
-            <Select value={selectedProgramme} onValueChange={setSelectedProgramme}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Select programme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Programmes</SelectItem>
-                {programmes.map((programme) => (
-                  <SelectItem key={programme.value} value={programme.value}>
-                    {programme.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+    {/* Programme Filter */}
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Programme:</span>
+      <Select value={selectedProgramme} onValueChange={setSelectedProgramme}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select programme" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Programmes</SelectItem>
+          {programmes.map((programme) => (
+            <SelectItem key={programme.value} value={programme.value}>
+              {programme.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+
 
       {loading ? (
         <SkeletonLoader rows={5} cols={10} />
