@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
-import { Search } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
+import { Search } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Input } from "./ui/input";
 
 type UserData = {
   id: string;
   displayName: string;
   email: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   createdAt: string;
 };
 
@@ -34,14 +34,14 @@ const AdminAccountManagement = () => {
   const { role, signOut } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const usersCollection = collection(db, 'users');
+        const usersCollection = collection(db, "users");
         const snapshot = await getDocs(usersCollection);
 
         const userList = snapshot.docs.map((doc) => ({
@@ -52,8 +52,8 @@ const AdminAccountManagement = () => {
         setUsers(userList);
         setFilteredUsers(userList);
       } catch (error) {
-        console.error('Error fetching users:', error);
-        toast.error('Failed to fetch users.');
+        console.error("Error fetching users:", error);
+        toast.error("Failed to fetch users.");
       } finally {
         setLoading(false);
       }
@@ -62,41 +62,58 @@ const AdminAccountManagement = () => {
     fetchUsers();
   }, []);
 
-  const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
+  const handleRoleChange = async (userId: string, newStatus: "user" | "admin") => {
     try {
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, { role: newRole });
-  
-      // Update both users and filteredUsers to reflect the role change
+      const userRef = doc(db, "users", userId);
+      const activityLogsCollectionRef = collection(db, "ActivityLogs");
+
+      // Find the user to get their old role
+      const user = users.find((u) => u.id === userId);
+      const oldStatus = user?.role || "unknown";
+      const adminEmail = role || "Unknown Admin";
+
+      // Update the user's role in Firestore
+      await updateDoc(userRef, { role: newStatus });
+
+      // Log the role change activity
+      await setDoc(doc(activityLogsCollectionRef), {
+        adminEmail,
+        activity: `Changed role of user`,
+        userId,
+        oldStatus,
+        newStatus,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Update the local state
       setUsers((prev) =>
         prev.map((user) =>
-          user.id === userId ? { ...user, role: newRole } : user
+          user.id === userId ? { ...user, role: newStatus } : user
         )
       );
-  
-      // If there's a search query, also update filteredUsers
+
+      // Update filteredUsers if there's a search query
       if (searchQuery) {
         setFilteredUsers((prev) =>
           prev.map((user) =>
-            user.id === userId ? { ...user, role: newRole } : user
+            user.id === userId ? { ...user, role: newStatus } : user
           )
         );
       } else {
         // Otherwise, update filteredUsers to reflect the entire users list
         setFilteredUsers((prev) =>
           prev.map((user) =>
-            user.id === userId ? { ...user, role: newRole } : user
+            user.id === userId ? { ...user, role: newStatus } : user
           )
         );
       }
-  
-      toast.success('User role updated successfully!');
+
+      toast.success("User role updated successfully!");
     } catch (error) {
-      console.error('Error updating user role:', error);
-      toast.error('Failed to update user role.');
+      console.error("Error updating user role:", error);
+      toast.error("Failed to update user role.");
     }
   };
-  
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -117,8 +134,6 @@ const AdminAccountManagement = () => {
       </div>
     );
   }
-
-
 
   return (
     <div className="max-w-6xl mx-auto h-full p-4">
@@ -145,39 +160,35 @@ const AdminAccountManagement = () => {
               <TableHead className="text-left">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          {loading ? (
-            <SkeletonLoader rows={5} cols={4} />
-          ) : (
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="min-w-[150px]">{user.displayName}</TableCell>
-                  <TableCell className="min-w-[200px]">{user.email}</TableCell>
-                  <TableCell className="min-w-[100px]">{user.role}</TableCell>
-                  <TableCell className="text-right min-w-[150px]">
-                    <div className="flex space-x-2">
-                      <Select
-                        value={user.role}
-                        onValueChange={(role) => handleRoleChange(user.id, role as 'user' | 'admin')}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Change Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          )}
+          <TableBody>
+            {filteredUsers.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="min-w-[150px]">{user.displayName}</TableCell>
+                <TableCell className="min-w-[200px]">{user.email}</TableCell>
+                <TableCell className="min-w-[100px]">{user.role}</TableCell>
+                <TableCell className="text-right min-w-[150px]">
+                  <div className="flex space-x-2">
+                    <Select
+                      value={user.role}
+                      onValueChange={(role) =>
+                        handleRoleChange(user.id, role as "user" | "admin")
+                      }
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Change Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
         </Table>
       </div>
-
-
     </div>
   );
 };
