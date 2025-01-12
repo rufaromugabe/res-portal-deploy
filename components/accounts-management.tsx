@@ -70,7 +70,7 @@ const AdminAccountManagement = () => {
       // Find the user to get their old role
       const user = users.find((u) => u.id === userId);
       const oldStatus = user?.role || "unknown";
-      const adminEmail = role || "Unknown Admin";
+      const adminEmail = user?.email|| "Unknown Admin";
 
       // Update the user's role in Firestore
       await updateDoc(userRef, { role: newStatus });
