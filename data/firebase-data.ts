@@ -1,6 +1,5 @@
-import { db } from "@/lib/firebase"; 
+import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
-
 
 // Define the type for the application
 export type Applications = {
@@ -14,6 +13,29 @@ export type Applications = {
   phone: string;
   status: "Pending" | "Accepted" | "Archived";
   submittedAt: string;
+  date: string; // New field for date
+  time: string; // New field for time
+};
+
+/**
+ * Helper function to format the timestamp into date and time
+ * @param timestamp - The timestamp to format
+ * @returns An object with separate date and time strings
+ */
+const formatTimestamp = (timestamp: string | undefined) => {
+  if (!timestamp) return { date: "", time: "" };
+  const dateObj = new Date(timestamp);
+  const date = dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const time = dateObj.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return { date, time };
 };
 
 /**
@@ -40,7 +62,10 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
 
       if (applicationSnap.exists()) {
         const applicationData = applicationSnap.data();
-        
+
+        // Format the submittedAt timestamp into date and time
+        const { date, time } = formatTimestamp(applicationData.submittedAt);
+
         // Combine the student and application data
         const application: Applications = {
           name: studentData.name,
@@ -51,11 +76,10 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
           reason: applicationData.reason,
           email: studentData.email,
           phone: studentData.phone || "",
-          status: applicationData.status || "Pending",  
-          submittedAt: applicationData.submittedAt
-  ? new Date(applicationData.submittedAt).toLocaleString()
-  : "",
-
+          status: applicationData.status || "Pending",
+          submittedAt: applicationData.submittedAt || "",
+          date, // Add the formatted date
+          time, // Add the formatted time
         };
 
         applicationsList.push(application);
@@ -69,8 +93,15 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
   }
 };
 
-
-export const updateApplicationStatus = async (regNumber: string, status:"Pending" | "Accepted" | "Archived") => {
+/**
+ * Updates the status of a specific application
+ * @param regNumber - The registration number of the application
+ * @param status - The new status ("Pending", "Accepted", or "Archived")
+ */
+export const updateApplicationStatus = async (
+  regNumber: string,
+  status: "Pending" | "Accepted" | "Archived"
+) => {
   try {
     const applicationRef = doc(db, "applications", regNumber);
     await updateDoc(applicationRef, { status });
@@ -79,6 +110,11 @@ export const updateApplicationStatus = async (regNumber: string, status:"Pending
     console.error("Error updating application status:", error);
   }
 };
+
+/**
+ * Fetches published students from the "PublishedStudents" collection
+ * @returns A list of published students
+ */
 export const fetchPublishedStudents = async () => {
   const querySnapshot = await getDocs(collection(db, "PublishedStudents"));
   return querySnapshot.docs.map((doc) => ({
@@ -86,4 +122,3 @@ export const fetchPublishedStudents = async () => {
     ...doc.data(),
   }));
 };
-

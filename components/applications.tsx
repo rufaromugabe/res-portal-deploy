@@ -239,53 +239,55 @@ const Applications = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredApplications.map((application) => (
-              <TableRow key={application.regNumber}>
-                <TableCell className="font-medium">
-                  {application.submittedAt}
-                </TableCell>
-                <TableCell>{application.name}</TableCell>
-                <TableCell>{application.regNumber}</TableCell>
-                <TableCell>{application.gender}</TableCell>
-                <TableCell>{application.programme}</TableCell>
-                <TableCell>{application.part}</TableCell>
-                <TableCell className="max-w-xs">{application.reason}</TableCell>
-                <TableCell className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-3 w-3" />
-                    <p className="text-xs text-gray-800">{application.email}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="h-3 w-3" />
-                    <p className="text-xs text-gray-800">{application.phone}</p>
-                  </div>
-                </TableCell>
+  {filteredApplications.map((application) => (
+    <TableRow key={application.regNumber}>
+      <TableCell className="font-medium min-w-[100px]">
+        <div>{application.date}</div> {/* Use pre-formatted date */}
+        <div className="text-xs text-gray-500">{application.time}</div> {/* Use pre-formatted time */}
+      </TableCell>
+      <TableCell className="min-w-[150px]">{application.name}</TableCell>
+      <TableCell className="min-w-[80px]">{application.regNumber}</TableCell>
+      <TableCell className="min-w-[80px]">{application.gender}</TableCell>
+      <TableCell className="min-w-[200px]">{application.programme}</TableCell>
+      <TableCell className="min-w-[20px]">{application.part}</TableCell>
+      <TableCell className="max-w-[500px]">{application.reason}</TableCell>
+      <TableCell className="space-y-2 min-w-[200px]">
+        <div className="flex items-center space-x-2">
+          <Mail className="h-3 w-3" />
+          <p className="text-xs text-gray-800">{application.email}</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Phone className="h-3 w-3" />
+          <p className="text-xs text-gray-800">{application.phone}</p>
+        </div>
+      </TableCell>
+      <TableCell className="text-right min-w-[150px]">
+        <div className="flex flex-col space-y-2">
+          <Select
+            value={application.status}
+            onValueChange={(status) =>
+              handleStatusChange(
+                application.regNumber,
+                status as "Accepted" | "Archived" | "Pending"
+              )
+            }
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Change Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Accepted">Accepted</SelectItem>
+              <SelectItem value="Archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
 
-                <TableCell className="text-right">
-                  <div className="flex flex-col space-y-2">
-                    <Select
-                      value={application.status}
-                      onValueChange={(status) =>
-                        handleStatusChange(
-                          application.regNumber,
-                          status as "Accepted" | "Archived" | "Pending"
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Change Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Accepted">Accepted</SelectItem>
-                        <SelectItem value="Archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+
         </Table>
       )}
     </div>
