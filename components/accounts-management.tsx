@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
+import { getAuth } from "@firebase/auth";
 
 type UserData = {
   id: string;
@@ -70,7 +71,7 @@ const AdminAccountManagement = () => {
       // Find the user to get their old role
       const user = users.find((u) => u.id === userId);
       const oldStatus = user?.role || "unknown";
-      const adminEmail = user?.email|| "Unknown Admin";
+      const adminEmail = getAuth().currentUser?.email|| "Unknown Admin";
 
       // Update the user's role in Firestore
       await updateDoc(userRef, { role: newStatus });
