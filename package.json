@@ -21,6 +21,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@studio-freight/react-lenis": "^0.0.47",
     "@tsparticles/engine": "^3.7.1",
     "@types/three": "^0.172.0",
     "class-variance-authority": "^0.7.1",
@@ -28,6 +29,7 @@
     "cmdk": "^1.0.0",
     "faker": "^6.6.6",
     "firebase": "^11.1.0",
+    "framer-motion": "^11.17.0",
     "lucide-react": "^0.469.0",
     "motion": "^11.15.0",
     "next": "14.2.5",
@@ -44,6 +46,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.172.0",
     "tsparticles": "^3.7.1",
+    "tsparticles-engine": "^2.12.0",
     "vanta": "^0.5.24",
     "zod": "^3.24.1"
   },
