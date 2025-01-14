@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from 'react-toastify';
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
 import { StudentProfile } from "./student-profile";
@@ -33,6 +33,7 @@ interface ApplicationData {
   email: string;
   regNumber: string;
   submittedAt: string;
+  status: "Pending" | "Accepted";
 }
 
 const StudentApplicationForm: React.FC = () => {
@@ -87,31 +88,76 @@ const StudentApplicationForm: React.FC = () => {
       toast.error("Profile data is missing. Please update your profile first.");
       return;
     }
-
+  
     const { regNumber, name, email } = profile;
-
+  
     setIsSubmitting(true);
-
+  
     try {
       const applicationDoc = doc(db, "applications", regNumber);
-
+      const applicationsCollection = collection(db, "applications");
+  
+      // Fetch settings from Firestore
+      const settingsDoc = doc(db, "Settings", "ApplicationLimits");
+      const settingsSnap = await getDoc(settingsDoc);
+  
+      if (!settingsSnap.exists()) {
+        throw new Error("Settings not found in Firestore.");
+      }
+  
+      const settings = settingsSnap.data();
+      const autoAcceptBoysLimit = settings.autoAcceptBoysLimit || 0;
+      const autoAcceptGirlsLimit = settings.autoAcceptGirlsLimit || 0;
+  
+      // Fetch the count of accepted applications for boys and girls
+      const boysQuery = query(
+        applicationsCollection,
+        where("status", "==", "Accepted"),
+        where("gender", "==", "Male")
+      );
+      const girlsQuery = query(
+        applicationsCollection,
+        where("status", "==", "Accepted"),
+        where("gender", "==", "Female")
+      );
+  
+      const [boysSnap, girlsSnap] = await Promise.all([
+        getDocs(boysQuery),
+        getDocs(girlsQuery),
+      ]);
+  
+      const boysCount = boysSnap.size;
+      const girlsCount = girlsSnap.size;
+  
+      // Determine status based on auto-accept limits
+      let status: "Accepted" | "Pending" = "Pending";
+      if (
+        (profile.gender === "Male" && boysCount < autoAcceptBoysLimit) ||
+        (profile.gender === "Female" && girlsCount < autoAcceptGirlsLimit)
+      ) {
+        status = "Accepted";
+      }
+  
+      // Save the application with calculated status
       await setDoc(applicationDoc, {
         ...data,
         name,
         email,
         regNumber,
         submittedAt: new Date().toISOString(),
+        status,
       });
-
+  
       setApplication({
         ...data,
         name,
         email,
         regNumber,
         submittedAt: new Date().toISOString(),
+        status,
       });
-
-      toast.success("Application submitted successfully.");
+  
+      toast.success(`Application submitted successfully. Status: ${status}`);
     } catch (error) {
       console.error("Error submitting application:", error);
       toast.error(
@@ -121,6 +167,8 @@ const StudentApplicationForm: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+  
+  
 
   const deleteApplication = async () => {
     if (!profile) {
