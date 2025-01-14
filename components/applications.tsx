@@ -23,6 +23,7 @@ import { fetchAllApplications } from "@/data/firebase-data";
 import { Separator } from "./ui/separator";
 import { updateApplicationStatus } from "@/data/firebase-data";
 import { programmes } from "@/data/programmes";
+import { toast } from "react-toastify";
 
 const SkeletonLoader = ({ rows = 10, cols = 10 }) => {
   return (
@@ -111,7 +112,8 @@ const Applications = () => {
         ((application.gender === "Male" && acceptedBoys >= boyLimit) ||
           (application.gender === "Female" && acceptedGirls >= girlLimit))
       ) {
-        alert(
+        toast.error(
+        
           `Cannot accept more ${
             application.gender === "Male" ? "boys" : "girls"
           }. Limit reached.`

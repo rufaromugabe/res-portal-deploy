@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Users, PieChart, Printer, Upload } from "lucide-react";
+import { BarChart2, Users, PieChart, Printer, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -214,23 +214,45 @@ const partData = {
       <h2 className="text-3xl font-bold mb-6 text-center">Accepted Applications</h2>
 
       {/* Statistics */}
-      <div className="max-w-6xl mx-auto mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Total Accepted Students</h4>
-            <p className="text-xl font-bold">{statistics.totalAccepted}</p>
-            <Users className="h-6 w-6 text-blue-500" />
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Gender Distribution</h4>
-            <div className="h-32">
-              <Pie data={genderData} />
+      <div className="max-w-6xl mx-auto mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+        <h3 className="text-2xl font-semibold mb-4 text-center text-gray-800">Application Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h4 className="text-lg font-medium text-gray-700 mb-2">Total Accepted</h4>
+            <p className="text-3xl font-bold text-blue-600">{statistics.totalAccepted}</p>
+            <div className="flex items-center mt-2">
+              <Users className="h-5 w-5 text-blue-500 mr-2" />
+              <span className="text-sm text-gray-600">Accepted Students</span>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Part Distribution</h4>
-            <div className="h-32">
-              <Bar data={partData} />
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h4 className="text-lg font-medium text-gray-700 mb-2">Gender Distribution</h4>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-3xl font-bold text-indigo-600">{statistics.totalMales}</p>
+                <p className="text-sm text-gray-600">Males</p>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-pink-600">{statistics.totalFemales}</p>
+                <p className="text-sm text-gray-600">Females</p>
+              </div>
+            </div>
+            <div className="mt-4 h-24">
+              <Pie data={genderData} options={{ plugins: { legend: { display: false } } }} />
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h4 className="text-lg font-medium text-gray-700 mb-2">Part Distribution</h4>
+            <div className="grid grid-cols-5 gap-2 mb-4">
+              {Object.entries(statistics.perPart).map(([part, count]) => (
+                <div key={part} className="text-center">
+                  <p className="text-lg font-semibold text-gray-800">{count}</p>
+                  <p className="text-xs text-gray-600">Part {part}</p>
+                </div>
+              ))}
+            </div>
+            <div className="h-24">
+              <Bar data={partData} options={{ plugins: { legend: { display: false } } }} />
             </div>
           </div>
         </div>
@@ -284,3 +306,4 @@ const partData = {
 };
 
 export default Accepted;
+

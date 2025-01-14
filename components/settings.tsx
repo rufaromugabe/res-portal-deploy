@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore"
 import { UserIcon as Male, UserIcon as Female, CheckCircle, SettingsIcon } from 'lucide-react'
+import { toast } from "react-toastify"
 
 const Settings = () => {
   const [boyLimit, setBoyLimit] = useState<number>(0)
@@ -50,10 +51,11 @@ const Settings = () => {
         autoAcceptBoysLimit,
         autoAcceptGirlsLimit,
       })
-      alert("Settings saved successfully!")
+      toast.success("Settings saved successfully!")
+    
     } catch (error) {
       console.error("Error saving settings:", error)
-      alert("Failed to save settings. Please try again.")
+        toast.error("Failed to save settings. Please try again.")
     } finally {
       setSaving(false)
     }
