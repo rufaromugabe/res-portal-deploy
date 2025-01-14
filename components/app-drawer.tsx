@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Activity,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,7 +82,8 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
-        { title: "Activity logs", icon: Activity, href: "/admin/logs" }
+        { title: "Activity logs", icon: Activity, href: "/admin/logs" },
+        {title: "Settings", icon: Settings, href: "/admin/settings"}
       );
     }
 

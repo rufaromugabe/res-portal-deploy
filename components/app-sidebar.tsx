@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Settings,
   Activity,
   Archive,
   CircleCheck,
@@ -30,6 +31,7 @@ import Logo from "@/public/hit_logo.png";
 import { useAuth, } from "@/hooks/useAuth"; 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { title } from "process";
 
 export function AppSidebar() {
   const { user, role, loading, signOut: signOutUser } = useAuth();
@@ -72,7 +74,8 @@ export function AppSidebar() {
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
-        { title: "Activity logs", icon: Activity, href: "/admin/logs" }
+        { title: "Activity logs", icon: Activity, href: "/admin/logs" },
+        {title: "Settings", icon: Settings, href: "/admin/settings"}
       );
     }
 

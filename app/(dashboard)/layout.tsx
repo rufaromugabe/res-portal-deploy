@@ -42,7 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <main className="w-full h-screen">
-        <div className="h-[98%] w-[99%] bg-white rounded-2xl border border-gray-200 shadow-lg mt-2">
+        <div className=" bg-white rounded-2xl border border-gray-200 shadow-lg mt-2">
         <AppDrawer >{children} </AppDrawer>
         </div>
       </main>

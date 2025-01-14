@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Mail, Phone, Search } from "lucide-react";
+import { Mail, Phone, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -18,13 +18,11 @@ import {
 } from "./ui/select";
 import { Input } from "./ui/input";
 import { getAuth } from "firebase/auth";
-import { collection, doc, setDoc, getFirestore } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getFirestore } from "firebase/firestore";
 import { fetchAllApplications } from "@/data/firebase-data";
 import { Separator } from "./ui/separator";
 import { updateApplicationStatus } from "@/data/firebase-data";
 import { programmes } from "@/data/programmes";
-
-
 
 const SkeletonLoader = ({ rows = 10, cols = 10 }) => {
   return (
@@ -54,6 +52,29 @@ const Applications = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [boyLimit, setBoyLimit] = useState<number>(0);
+  const [girlLimit, setGirlLimit] = useState<number>(0);
+
+  const db = getFirestore();
+  const settingsDocRef = doc(db, "Settings", "ApplicationLimits");
+
+  // Fetch application limits
+  useEffect(() => {
+    const fetchLimits = async () => {
+      try {
+        const docSnapshot = await getDoc(settingsDocRef);
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setBoyLimit(data.boyLimit || 0);
+          setGirlLimit(data.girlLimit || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+
+    fetchLimits();
+  }, []);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -74,16 +95,30 @@ const Applications = () => {
     regNumber: string,
     newStatus: "Accepted" | "Archived" | "Pending"
   ) => {
-    const db = getFirestore();
     const activityLogsCollectionRef = collection(db, "ActivityLogs");
     const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
   
     try {
-      // Find the application and get the current status
       const application = applications.find((app) => app.regNumber === regNumber);
-      const oldStatus = application?.status || "Unknown";
   
-      // Update the application status
+      if (!application) return;
+  
+      const oldStatus = application.status || "Unknown";
+  
+      // Enforce limits for boys and girls
+      if (
+        newStatus === "Accepted" &&
+        ((application.gender === "Male" && acceptedBoys >= boyLimit) ||
+          (application.gender === "Female" && acceptedGirls >= girlLimit))
+      ) {
+        alert(
+          `Cannot accept more ${
+            application.gender === "Male" ? "boys" : "girls"
+          }. Limit reached.`
+        );
+        return;
+      }
+  
       await updateApplicationStatus(regNumber, newStatus);
       setApplications((prevApps) =>
         prevApps.map((app) =>
@@ -91,7 +126,6 @@ const Applications = () => {
         )
       );
   
-      // Log the status change activity
       await setDoc(doc(activityLogsCollectionRef), {
         adminEmail,
         activity: `Changed status of application`,
@@ -104,12 +138,21 @@ const Applications = () => {
       console.log("Status change logged successfully.");
     } catch (error) {
       console.error("Error updating application status:", error);
-      console.error("Failed to log status change activity:", error);
     }
   };
   
 
-  const filteredApplications = applications.filter((application) => {
+  // Count accepted applications by gender
+  const acceptedBoys = applications.filter(
+    (app) => app.gender === "Male" && app.status === "Accepted"
+  ).length;
+
+  const acceptedGirls = applications.filter(
+    (app) => app.gender === "Female" && app.status === "Accepted"
+  ).length;
+
+const filteredApplications = applications
+  .filter((application) => {
     const partMatch =
       selectedPart === "all" || application.part.toString() === selectedPart;
     const genderMatch =
@@ -123,18 +166,46 @@ const Applications = () => {
       application.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       application.regNumber.toLowerCase().includes(searchQuery.toLowerCase());
     return partMatch && genderMatch && statusMatch && programmeMatch && searchMatch;
+  })
+  .sort((a, b) => {
+    const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateComparison !== 0) return dateComparison;
+
+    // Sort by time if the dates are equal
+    return new Date(`1970-01-01T${a.time}`).getTime() - new Date(`1970-01-01T${b.time}`).getTime();
   });
+
 
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">
         On-campus Res Applications
       </h2>
-      <p className="text-gray-600 mb-8 text-center">
-        These are all the students who have applied for on-campus residence so
-        far.
-      </p>
 
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+        <h3 className="text-lg font-semibold mb-4 text-center">Application Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-medium mb-2">Boys accepted: {acceptedBoys} / {boyLimit}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${(acceptedBoys / boyLimit) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium mb-2">Girls accepted: {acceptedGirls} / {girlLimit}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-pink-600 h-2.5 rounded-full" 
+                style={{ width: `${(acceptedGirls / girlLimit) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
 {/* Search and Filters */}
 <div className="max-w-6xl mx-auto mb-6 space-y-4">
   {/* Search Bar */}
@@ -246,11 +317,11 @@ const Applications = () => {
         <div className="text-xs text-gray-500">{application.time}</div> {/* Use pre-formatted time */}
       </TableCell>
       <TableCell className="min-w-[150px]">{application.name}</TableCell>
-      <TableCell className="min-w-[80px]">{application.regNumber}</TableCell>
+      <TableCell className="min-w-[50px]">{application.regNumber}</TableCell>
       <TableCell className="min-w-[80px]">{application.gender}</TableCell>
       <TableCell className="min-w-[200px]">{application.programme}</TableCell>
       <TableCell className="min-w-[20px]">{application.part}</TableCell>
-      <TableCell className="max-w-[500px]">{application.reason}</TableCell>
+      <TableCell className="max-w-[200px]">{application.reason}</TableCell>
       <TableCell className="space-y-2 min-w-[200px]">
         <div className="flex items-center space-x-2">
           <Mail className="h-3 w-3" />
@@ -289,9 +360,12 @@ const Applications = () => {
 
 
         </Table>
+
+      
       )}
     </div>
   );
 };
 
 export default Applications;
+
