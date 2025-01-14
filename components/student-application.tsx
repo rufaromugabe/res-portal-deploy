@@ -1,4 +1,4 @@
-'use client';
+'use client'; 
 import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +12,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'react-toastify';
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -21,16 +20,15 @@ import { StudentProfile } from "./student-profile";
 
 // Define Zod schema for validation
 const StudentApplicationSchema = z.object({
-  reason: z
+  preferredHostel: z
     .string()
-    .min(1, "Reason is required")
-    .min(50, "Please provide a more detailed reason (at least 50 characters)"),
+    .min(1, "Preferred hostel is required")
 });
 
 type FormValues = z.infer<typeof StudentApplicationSchema>;
 
 interface ApplicationData {
-  reason: string;
+  preferredHostel: string;
   name: string;
   email: string;
   regNumber: string;
@@ -46,7 +44,7 @@ const StudentApplicationForm: React.FC = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentApplicationSchema),
     defaultValues: {
-      reason: "",
+      preferredHostel: "",
     },
   });
 
@@ -183,7 +181,7 @@ const StudentApplicationForm: React.FC = () => {
             <strong>Registration Number:</strong> {application.regNumber}
           </p>
           <p>
-            <strong>Reason:</strong> {application.reason}
+            <strong>Preferred Hostel:</strong> {application.preferredHostel}
           </p>
           <p>
             <strong>Submitted At:</strong> {new Date(application.submittedAt).toLocaleString()}
@@ -217,18 +215,22 @@ const StudentApplicationForm: React.FC = () => {
         >
           <FormField
             control={form.control}
-            name="reason"
+            name="preferredHostel"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-medium">
-                  Justification for Application
+                  Preferred Hostel
                 </FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Please provide a detailed reason for your on-campus residence application..."
-                    className="min-h-[150px]"
+                  <select
+                    className="form-select block w-full mt-1"
                     {...field}
-                  />
+                  >
+                    <option value="">Select a hostel</option>
+                    <option value="Hostel 1">Hostel 1 (560)</option>
+                    <option value="Other hostels">Other Hostel (460)</option>
+                    {/* Add other hostel options here */}
+                  </select>
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -177,12 +177,12 @@ const filteredApplications = applications
 
 
   return (
-    <div className="w-full bg-white p-8 rounded-lg shadow-sm">
+    <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">
         On-campus Res Applications
       </h2>
 
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+      <div className=" mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
         <h3 className="text-lg font-semibold mb-4 text-center">Application Statistics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -303,7 +303,7 @@ const filteredApplications = applications
               <TableHead>Gender</TableHead>
               <TableHead>Programme</TableHead>
               <TableHead>Part</TableHead>
-              <TableHead>Reason</TableHead>
+              <TableHead>Preferred Hostel</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right"></TableHead>
@@ -321,7 +321,7 @@ const filteredApplications = applications
       <TableCell className="min-w-[80px]">{application.gender}</TableCell>
       <TableCell className="min-w-[200px]">{application.programme}</TableCell>
       <TableCell className="min-w-[20px]">{application.part}</TableCell>
-      <TableCell className="max-w-[200px]">{application.reason}</TableCell>
+      <TableCell className="max-w-[200px]">{application.preferredHostel}</TableCell>
       <TableCell className="space-y-2 min-w-[200px]">
         <div className="flex items-center space-x-2">
           <Mail className="h-3 w-3" />
