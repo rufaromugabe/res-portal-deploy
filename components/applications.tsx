@@ -184,7 +184,7 @@ const filteredApplications = applications
         On-campus Res Applications
       </h2>
 
-      <div className=" mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+      <div className=" mb-6 p-4  bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
         <h3 className="text-lg font-semibold mb-4 text-center">Application Statistics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

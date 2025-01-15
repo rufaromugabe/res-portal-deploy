@@ -70,16 +70,18 @@ const Settings = () => {
   }
 
   return (
-    <div className="h-screen flex items-center justify-center">
+    <div className="h-screen flex items-start justify-center">
   
-    <Card className="w-full  max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center gap-2">
-          <SettingsIcon className="w-6 h-6" />
-          Application Limits
-        </CardTitle>
-        <CardDescription>Set the limits for applications and auto-acceptance.</CardDescription>
-      </CardHeader>
+    <Card className="w-full  max-w-5xl mx-auto ">
+    <CardHeader className="flex flex-col items-center justify-center">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-center">
+            <SettingsIcon className="w-6 h-6" />
+            Application Limits
+          </CardTitle>
+          <CardDescription className="text-center">
+            Set the limits for applications and auto-acceptance.
+          </CardDescription>
+        </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">General Limits</h3>
@@ -145,7 +147,7 @@ const Settings = () => {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="w-full"
+          className="w-full bg-gray-600 hover:bg-gray-700"
         >
           {saving ? "Saving..." : "Save Settings"}
         </Button>
