@@ -111,7 +111,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         </Button>
 
         {/* App Title */}
-        <h1 className="ml-4 text-xl font-semibold">Rez Portal</h1>
+        <h1 className="ml-4 text-xl font-semibold">REZ Portal</h1>
 
         {/* Right side - Placeholder */}
         <div className="ml-auto flex items-center space-x-4">

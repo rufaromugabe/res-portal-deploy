@@ -43,23 +43,34 @@ const Settings = () => {
   }, [])
 
   const handleSave = async () => {
-    setSaving(true)
+    // Validation logic
+    if (autoAcceptBoysLimit > boyLimit) {
+      toast.error("Auto-Accept Boys Limit cannot exceed Boys Limit.");
+      return;
+    }
+  
+    if (autoAcceptGirlsLimit > girlLimit) {
+      toast.error("Auto-Accept Girls Limit cannot exceed Girls Limit.");
+      return;
+    }
+  
+    setSaving(true);
     try {
       await setDoc(settingsDocRef, {
         boyLimit,
         girlLimit,
         autoAcceptBoysLimit,
         autoAcceptGirlsLimit,
-      })
-      toast.success("Settings saved successfully!")
-    
+      });
+      toast.success("Settings saved successfully!");
     } catch (error) {
-      console.error("Error saving settings:", error)
-        toast.error("Failed to save settings. Please try again.")
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save settings. Please try again.");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
+  
 
   if (loading) {
     return (
