@@ -17,7 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await signIn();
-      toast.success('Successfully logged in!');
+     
     } catch (error) {
       toast.error('Failed to log in. Please try again.');
     }
