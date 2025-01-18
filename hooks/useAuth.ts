@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import { User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
@@ -47,46 +47,41 @@ export function useAuth() {
 
     return () => unsubscribe();
   }, []);
+
   const signIn = async () => {
     const provider = new GoogleAuthProvider();
-  
-    // List of allowed domains
-    const allowedDomains = ['hit.ac.zw','gmail.com'];
-  
+    provider.setCustomParameters({
+      hd: 'hit.ac.zw',
+    });
+
+
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-  
+
       if (user) {
-        // Check if the user's email matches any allowed domain
-        if (user.email && allowedDomains.some((domain) => user.email?.endsWith(`@${domain}`) ?? false)) {
-          const userRef = doc(db, 'users', user.uid);
-          let userRole: UserRole = 'user';
-  
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            userRole = userSnap.data().role as UserRole;
-            toast.success('Successfully logged in!');
-          } else {
-            await setDoc(userRef, {
-              displayName: user.displayName,
-              email: user.email,
-              role: 'user',
-              createdAt: new Date().toISOString(),
-            });
-            toast.success('Welcome to your new account!');
-          }
-  
-          setRole(userRole);
-          if (userRole === 'admin') {
-            router.push('/admin');
-          } else {
-            router.push('/student/profile');
-          }
+        const userRef = doc(db, 'users', user.uid);
+        let userRole: UserRole = 'user';
+
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          userRole = userSnap.data().role as UserRole;
+          toast.success('Successfully logged in!');
         } else {
-          
-          await signOut(auth);
-          toast.error('Sign-in is restricted to HIT email addresses only');
+          await setDoc(userRef, {
+            displayName: user.displayName,
+            email: user.email,
+            role: 'user',
+            createdAt: new Date().toISOString(),
+          });
+          toast.success('Welcome to your new account!');
+        }
+
+        setRole(userRole);
+        if (userRole === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/student/profile');
         }
       }
     } catch (error) {
@@ -94,7 +89,7 @@ export function useAuth() {
       toast.error('Failed to sign in with Google');
     }
   };
-  
+
   const signOutUser = async () => {
     try {
       await signOut(auth);
