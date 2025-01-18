@@ -51,7 +51,7 @@ export function useAuth() {
     const provider = new GoogleAuthProvider();
   
     // List of allowed domains
-    const allowedDomains = ['hit.ac.zw'];
+    const allowedDomains = ['hit.ac.zw','gmail.com'];
   
     try {
       const result = await signInWithPopup(auth, provider);
