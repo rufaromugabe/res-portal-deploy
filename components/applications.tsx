@@ -181,7 +181,7 @@ const filteredApplications = applications
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">
-        On-campus Res Applications
+        On-campus Accommodation Applications
       </h2>
 
       <div className=" mb-6 p-4  bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
