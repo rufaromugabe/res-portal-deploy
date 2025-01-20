@@ -135,7 +135,7 @@ const StudentProfileForm: React.FC<{}> = () => {
         },
         { merge: true }
       );
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated successfully go to application form");
       setIsEditing(false);
     } catch (error) {
       toast.error("Failed to update profile");

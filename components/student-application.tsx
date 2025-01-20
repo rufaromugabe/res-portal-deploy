@@ -157,7 +157,7 @@ const StudentApplicationForm: React.FC = () => {
         status,
       });
   
-      toast.success(`Application submitted successfully. Status: ${status}`);
+      toast.success(`Application submitted successfully`);
     } catch (error) {
       console.error("Error submitting application:", error);
       toast.error(

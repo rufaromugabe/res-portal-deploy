@@ -1,6 +1,7 @@
 // src/data/programmes.ts
 
 export const programmes = [
+    { value: "BTECH_CHEMICAL_ENGINEERING", label: "BTech (Hons) in Chemical and Processing Systems Engineering" },
     { value: "BTECH_FOOD_PROCESSING", label: "BTech (Hons) in Food Processing Technology" },
     { value: "BTECH_INDUSTRIAL_MANUFACTURING", label: "BTech (Hons) in Industrial and Manufacturing Engineering" },
     { value: "BTECH_MATERIALS_TECHNOLOGY", label: "BTech (Hons) in Materials Technology and Engineering" },
