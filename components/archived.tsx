@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Archive, Printer, PieChart, Users } from "lucide-react";
+import { Archive, Printer, PieChart, Users, Upload } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,6 +13,8 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { fetchAllApplications } from "@/data/firebase-data";
+import { generateExcelFile } from "@/utils/generate_xl"; 
+import { toast } from "react-toastify";
 
 const SkeletonRow = () => (
   <TableRow>
@@ -35,6 +37,7 @@ const Archived = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [publishing, setPublishing] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -43,6 +46,7 @@ const Archived = () => {
         setApplications(apps);
       } catch (error) {
         console.error("Error fetching applications:", error);
+        toast.error("Failed to fetch archived students.");
       } finally {
         setLoading(false);
       }
@@ -61,15 +65,44 @@ const Archived = () => {
     );
   }, [applications, searchQuery]);
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportExcel = () => {
+    try {
+      if (archivedApplications.length === 0) {
+        toast.info("No data available to export.");
+        return;
+      }
+
+      const headers = ['Name', 'Registration Number', 'Gender', 'Part'];
+      
+      const data = archivedApplications.map(app => ({
+        name: app.name,
+        registration_number: app.regNumber,
+        gender: app.gender,
+        part: app.part, // Adjust based on actual data structure
+      }));
+
+      console.log("Exporting Data:", data); // Debugging
+
+      generateExcelFile({
+        headers,
+        data,
+        fileName: 'Archived_Students.xlsx',
+      });
+
+      toast.success('Excel file generated successfully!');
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast.error('Failed to export Excel file.');
+    }
   };
+
+  // handlePublish function if applicable
 
   return (
     <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">Archived Applications</h2>
 
-      {/* Search and Print */}
+      {/* Search and Export */}
       <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <Input
           placeholder="Search by name or registration number..."
@@ -77,9 +110,9 @@ const Archived = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-        <Button onClick={handlePrint} className="bg-gray-600 hover:bg-gray-700 ml-auto">
+        <Button onClick={handleExportExcel} className="bg-gray-600 hover:bg-gray-700 ml-auto">
           <Printer className="mr-2 h-5 w-5" />
-          Print as PDF
+          Save as Excel
         </Button>
       </div>
 

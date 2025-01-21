@@ -11,6 +11,7 @@ import { setDoc, collection, getFirestore, doc, getDocs, deleteDoc } from "fireb
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
 import { toast } from "react-toastify";
+import { generateExcelFile } from "@/utils/generate_xl"; // Ensure correct import path
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
@@ -155,6 +156,26 @@ const Accepted = () => {
   
     window.print();
   };
+
+  const handleExportExcel = () => {
+    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme'];
+    const data = acceptedApplications.map(app => ({
+      name: app.name,
+      email: app.email,
+      registration_number: app.regNumber,
+      gender: app.gender,
+      programme: app.programme,
+    }));
+  
+    generateExcelFile({
+      headers,
+      data,
+      fileName: 'Accepted_Applications.xlsx',
+    });
+  
+    toast.success('Excel file generated successfully!');
+  };
+  
   // Pie chart data
   const genderData = {
     labels: ["Male", "Female"],
@@ -266,10 +287,11 @@ const partData = {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-        <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 ml-auto">
+        <Button onClick={handleExportExcel} className="bg-blue-600 hover:bg-blue-700 ml-auto">
           <Printer className="mr-2 h-5 w-5" />
-          Print as PDF
+          Save as Excel
         </Button>
+      
         <Button
           onClick={handlePublish}
           className="bg-green-600 hover:bg-green-700"
