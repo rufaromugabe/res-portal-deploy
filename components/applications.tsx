@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Mail, Phone, Search } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Button } from "./ui/button"
@@ -98,7 +98,7 @@ const Applications = () => {
       setApplications((prevApps) =>
         prevApps.map((app) => (app.regNumber === regNumber ? { ...app, status: newStatus } : app)),
       )
-
+toast.success(`Application status changed successfully.`)
       await setDoc(doc(activityLogsCollectionRef), {
         adminEmail,
         activity: `Changed status of application`,
@@ -115,11 +115,18 @@ const Applications = () => {
   }
 
   // Count accepted applications by gender
-  const acceptedBoys = applications.filter((app) => app.gender === "Male" && app.status === "Accepted").length
-
-  const acceptedGirls = applications.filter((app) => app.gender === "Female" && app.status === "Accepted").length
-
-  const filteredApplications = applications
+  const acceptedBoys = useMemo(
+    () => applications.filter(app => app.gender === "Male" && app.status === "Accepted").length,
+    [applications]
+  );
+  
+  const acceptedGirls = useMemo(
+    () => applications.filter(app => app.gender === "Female" && app.status === "Accepted").length,
+    [applications]
+  );
+  
+  const filteredApplications = useMemo(() => {
+    return applications
     .filter((application) => {
       const partMatch = selectedPart === "all" || application.part.toString() === selectedPart
       const genderMatch = selectedGender === "all" || application.gender === selectedGender
@@ -139,6 +146,8 @@ const Applications = () => {
       return new Date(`1970-01-01T${a.time}`).getTime() - new Date(`1970-01-01T${b.time}`).getTime()
     })
 
+  }, [applications, selectedPart, selectedGender, selectedStatus, selectedProgramme, searchQuery]);
+  
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">On-campus Accommodation Applications</h2>

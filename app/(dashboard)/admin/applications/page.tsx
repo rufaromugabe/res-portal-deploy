@@ -1,3 +1,4 @@
+
 "use client";
 import React from "react";
 import { useAuth } from '@/hooks/useAuth';
@@ -5,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AuthProvider } from "@/components/auth-provider";
 import Applications from "@/components/applications";
+import { QueryClient, QueryClientProvider } from 'react-query';
+
+// Initialize QueryClient
+const queryClient = new QueryClient();
 
 const page = () => {
   const { user, loading, role } = useAuth();
@@ -23,11 +28,13 @@ const page = () => {
     }
   }, [user, loading, role, router]);
 
-  
-  
-  return<AuthProvider>
-  <Applications />
-  </AuthProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        {isAuthorized && <Applications />}
+      </AuthProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default page;
