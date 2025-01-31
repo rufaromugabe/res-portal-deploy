@@ -15,6 +15,8 @@ export type Applications = {
   submittedAt: string;
   date: string; // New field for date
   time: string; // New field for time
+  paymentStatus: string;
+  reference: string;
 };
 
 /**
@@ -83,6 +85,9 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
         phone: studentData.phone || "",
         status: applicationData.status || "Pending",
         submittedAt: applicationData.submittedAt || "",
+        paymentStatus: applicationData.paymentStatus || "Not Paid",
+        reference: applicationData.reference || "",
+
         date,
         time,
       });
