@@ -111,7 +111,7 @@ const PublishedStudents = () => {
           <TableBody>
             {filteredStudents.map((student) => (
               <TableRow key={student.regNumber} className="hover:bg-indigo-50 border-b border-gray-200">
-                <TableCell className="p-4 whitespace-nowrap">{student.name}</TableCell>
+                <TableCell className="p-4 ">{student.name}</TableCell>
                 <TableCell className="p-4 whitespace-nowrap">{student.regNumber}</TableCell>
                 <TableCell className="p-4 whitespace-nowrap">{student.gender}</TableCell>
               </TableRow>

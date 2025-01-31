@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Users, PieChart, Printer, Upload } from 'lucide-react';
+import { BarChart2, Users, PieChart, Printer, Upload, DollarSign, Check } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -12,9 +12,12 @@ import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
 import { toast } from "react-toastify";
 import { generateExcelFile } from "@/utils/generate_xl"; // Ensure correct import path
+import PaymentStatusModal from "./payment-modal"; // Import the modal component
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
+
 
 const Skeleton = ({ rows = 5 }) => (
   <div className="w-full max-w-6xl mx-auto p-4">
@@ -47,11 +50,15 @@ const StatisticsSkeleton = () => (
   </>
 );
 
+
 const Accepted = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [publishing, setPublishing] = useState<boolean>(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -95,88 +102,44 @@ const Accepted = () => {
     return stats;
   }, [acceptedApplications]);
 
-  // const handlePublish = async () => {
-  //   if (publishing) return; // Prevent duplicate submissions
-  //   setPublishing(true);
-  
-  //   const db = getFirestore();
-  //   const publishedCollectionRef = collection(db, "PublishedStudents");
-  //   const activityLogsCollectionRef = collection(db, "ActivityLogs");
-  //   const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
-  
-  //   try {
-  //     // Fetch all existing documents in the collection and delete them
-  //     const existingDocs = await getDocs(publishedCollectionRef);
-  //     const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
-  //     await Promise.all(deletePromises);
-  
-  //     // Publish the new list
-  //     const publishPromises = acceptedApplications.map((app) =>
-  //       setDoc(doc(db, "PublishedStudents", app.regNumber), {
-  //         name: app.name,
-  //         gender: app.gender,
-  //         regNumber: app.regNumber,
-  //       })
-  //     );
-  //     await Promise.all(publishPromises);
-  
-  //     // Save activity log
-  //     await setDoc(doc(activityLogsCollectionRef), {
-  //       adminEmail,
-  //       activity: "Published the list of accepted applications",
-  //       timestamp: new Date().toISOString(),
-  //     });
-  
-  //     toast.success("Published list successfully!");
-  //   } catch (error) {
-  //     console.error("Error publishing list:", error);
-  //     toast.error("Failed to publish list. Please try again.");
-  //   } finally {
-  //     setPublishing(false);
-  //   }
-  // };
   const handlePublish = async () => {
-    if (publishing) return;
+    setConfirmDialogOpen(false);
     setPublishing(true);
-  
-    const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
-  
-    const publishedList = acceptedApplications.map((app) => ({
-      name: app.name,
-      gender: app.gender,
-      regNumber: app.regNumber,
-    }));
-  
     try {
-      // Send published list to the API route to save it as a JSON file
+      const db = getFirestore();
+      const activityLogsCollectionRef = collection(db, "ActivityLogs");
+      const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
+      const publishedList = acceptedApplications.map((app) => ({
+        name: app.name,
+        gender: app.gender,
+        regNumber: app.regNumber,
+      }));
+
       const response = await fetch("/api/savePublishedLists", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publishedList }),
       });
-  
       if (!response.ok) throw new Error("Failed to save the published list");
-  
-      // Log activity (optional: you can still log this in Firebase)
-      console.log(`${adminEmail} published the accepted list`);
-  
+
+      await setDoc(doc(activityLogsCollectionRef), {
+        adminEmail,
+        activity: "Published the list of accepted applications",
+        timestamp: new Date().toISOString(),
+      });
       toast.success("Published list saved successfully!");
     } catch (error) {
-      console.error("Error publishing list:", error);
       toast.error("Failed to publish list. Please try again.");
     } finally {
       setPublishing(false);
     }
   };
-  
+
   const handlePrint = () => {
     const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
     const db = getFirestore();
     const activityLogsCollectionRef = collection(db, "ActivityLogs");
   
-    // Save activity log
     setDoc(doc(activityLogsCollectionRef), {
       adminEmail,
       activity: "Printed the accepted applications list",
@@ -193,13 +156,15 @@ const Accepted = () => {
   };
 
   const handleExportExcel = () => {
-    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme'];
+    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme', 'Payment', 'Reference'];
     const data = acceptedApplications.map(app => ({
       name: app.name,
       email: app.email,
       registration_number: app.regNumber,
       gender: app.gender,
       programme: app.programme,
+      payment: app.paymentStatus,
+      reference: app.reference,
     }));
   
     generateExcelFile({
@@ -210,7 +175,30 @@ const Accepted = () => {
   
     toast.success('Excel file generated successfully!');
   };
+
+  const handleOpenModal = (student: any) => {
   
+    setSelectedStudent(student);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedStudent(null);
+  };
+  const handlePaymentStatusUpdate = (updatedStudent: any) => {
+    setApplications((prevApplications) =>
+      prevApplications.map((app) =>
+        app.regNumber === updatedStudent.regNumber
+          ? { ...app, paymentStatus: updatedStudent.paymentStatus }
+          : app
+      )
+    );
+  };
+  
+
+  // ... (keep the existing genderData and partData definitions)
+   
   // Pie chart data
   const genderData = {
     labels: ["Male", "Female"],
@@ -254,7 +242,6 @@ const partData = {
     },
   ],
 };
-
 
   if (loading) {
     return (
@@ -322,20 +309,27 @@ const partData = {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-        <Button onClick={handleExportExcel} className="bg-blue-600 hover:bg-blue-700 ml-auto">
+        <Button onClick={handleExportExcel} className="bg-blue-600 hover:bg-blue-700 ">
           <Printer className="mr-2 h-5 w-5" />
           Save as Excel
         </Button>
       
-        <Button
-          onClick={handlePublish}
-          className="bg-green-600 hover:bg-green-700"
-          disabled={publishing}
-        >
+        <Button onClick={() => setConfirmDialogOpen(true)} className="bg-green-600 hover:bg-green-700" disabled={publishing}>
           <Upload className="mr-2 h-5 w-5" />
           {publishing ? "Publishing..." : "Publish List"}
         </Button>
       </div>
+
+      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
+        <DialogTitle>Confirm Publish</DialogTitle>
+        <DialogContent>
+          Are you sure you want to publish the new list?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} className="bg-gray-400">Cancel</Button>
+          <Button onClick={handlePublish} className="bg-green-600 hover:bg-green-700">Confirm</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Table */}
       <Table className="max-w-6xl mx-auto border-separate border-spacing-y-2">
@@ -345,6 +339,7 @@ const partData = {
             <TableHead>Reg Number</TableHead>
             <TableHead>Gender</TableHead>
             <TableHead>Part</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -354,13 +349,45 @@ const partData = {
               <TableCell>{app.regNumber}</TableCell>
               <TableCell>{app.gender}</TableCell>
               <TableCell>{app.part}</TableCell>
+              <TableCell>
+              <Button
+      onClick={() => handleOpenModal(app)}
+      variant="outline"
+      className={`mr-2 ${
+        app.paymentStatus === "Fully Paid"
+          ? "bg-green-500 text-white hover:bg-green-600"
+          : "bg-red-500 text-white hover:bg-red-600"
+      }`}
+      
+    >
+      {app.paymentStatus === "Fully Paid" ? (
+        <span className="flex items-center">
+          <Check className="mr-2 h-4 w-4" /> {/* Checkmark icon for fully paid */}
+          Fully Paid
+        </span>
+      ) : (
+        <span className="flex items-center">
+          <DollarSign className="mr-2 h-4 w-4" /> {/* Dollar sign icon for payment status */}
+          {app.paymentStatus}
+        </span>
+      )}
+    </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      {/* Payment Status Modal */}
+      <PaymentStatusModal
+  isOpen={isModalOpen}
+  onClose={handleCloseModal}
+  student={selectedStudent}
+  onUpdate={handlePaymentStatusUpdate} // Pass the update function
+/>
+
     </div>
   );
 };
 
 export default Accepted;
-
