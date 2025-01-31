@@ -116,10 +116,10 @@ export const updateApplicationStatus = async (
  * Fetches published students from the "PublishedStudents" collection
  * @returns A list of published students
  */
-export const fetchPublishedStudents = async () => {
-  const querySnapshot = await getDocs(collection(db, "PublishedStudents"));
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-};
+// export const fetchPublishedStudents = async () => {
+//   const querySnapshot = await getDocs(collection(db, "PublishedStudents"));
+//   return querySnapshot.docs.map((doc) => ({
+//     id: doc.id,
+//     ...doc.data(),
+//   }));
+// };

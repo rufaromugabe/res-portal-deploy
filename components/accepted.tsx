@@ -138,7 +138,8 @@ const Accepted = () => {
   const handlePublish = async () => {
     if (publishing) return;
     setPublishing(true);
-  
+    const db = getFirestore();
+    const activityLogsCollectionRef = collection(db, "ActivityLogs");
     const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
   
     const publishedList = acceptedApplications.map((app) => ({
@@ -159,7 +160,14 @@ const Accepted = () => {
   
       if (!response.ok) throw new Error("Failed to save the published list");
   
-      // Log activity (optional: you can still log this in Firebase)
+
+      // Save activity log
+       await setDoc(doc(activityLogsCollectionRef), {
+         adminEmail,
+         activity: "Published the list of accepted applications",
+         timestamp: new Date().toISOString(),
+        });
+  
       console.log(`${adminEmail} published the accepted list`);
   
       toast.success("Published list saved successfully!");
