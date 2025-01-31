@@ -55,6 +55,7 @@ export function useAuth() {
      });
 
 
+
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
