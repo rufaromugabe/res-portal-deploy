@@ -95,39 +95,74 @@ const Accepted = () => {
     return stats;
   }, [acceptedApplications]);
 
+  // const handlePublish = async () => {
+  //   if (publishing) return; // Prevent duplicate submissions
+  //   setPublishing(true);
+  
+  //   const db = getFirestore();
+  //   const publishedCollectionRef = collection(db, "PublishedStudents");
+  //   const activityLogsCollectionRef = collection(db, "ActivityLogs");
+  //   const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
+  
+  //   try {
+  //     // Fetch all existing documents in the collection and delete them
+  //     const existingDocs = await getDocs(publishedCollectionRef);
+  //     const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
+  //     await Promise.all(deletePromises);
+  
+  //     // Publish the new list
+  //     const publishPromises = acceptedApplications.map((app) =>
+  //       setDoc(doc(db, "PublishedStudents", app.regNumber), {
+  //         name: app.name,
+  //         gender: app.gender,
+  //         regNumber: app.regNumber,
+  //       })
+  //     );
+  //     await Promise.all(publishPromises);
+  
+  //     // Save activity log
+  //     await setDoc(doc(activityLogsCollectionRef), {
+  //       adminEmail,
+  //       activity: "Published the list of accepted applications",
+  //       timestamp: new Date().toISOString(),
+  //     });
+  
+  //     toast.success("Published list successfully!");
+  //   } catch (error) {
+  //     console.error("Error publishing list:", error);
+  //     toast.error("Failed to publish list. Please try again.");
+  //   } finally {
+  //     setPublishing(false);
+  //   }
+  // };
   const handlePublish = async () => {
-    if (publishing) return; // Prevent duplicate submissions
+    if (publishing) return;
     setPublishing(true);
   
-    const db = getFirestore();
-    const publishedCollectionRef = collection(db, "PublishedStudents");
-    const activityLogsCollectionRef = collection(db, "ActivityLogs");
     const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
   
+    const publishedList = acceptedApplications.map((app) => ({
+      name: app.name,
+      gender: app.gender,
+      regNumber: app.regNumber,
+    }));
+  
     try {
-      // Fetch all existing documents in the collection and delete them
-      const existingDocs = await getDocs(publishedCollectionRef);
-      const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-  
-      // Publish the new list
-      const publishPromises = acceptedApplications.map((app) =>
-        setDoc(doc(db, "PublishedStudents", app.regNumber), {
-          name: app.name,
-          gender: app.gender,
-          regNumber: app.regNumber,
-        })
-      );
-      await Promise.all(publishPromises);
-  
-      // Save activity log
-      await setDoc(doc(activityLogsCollectionRef), {
-        adminEmail,
-        activity: "Published the list of accepted applications",
-        timestamp: new Date().toISOString(),
+      // Send published list to the API route to save it as a JSON file
+      const response = await fetch("/api/savePublishedLists", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ publishedList }),
       });
   
-      toast.success("Published list successfully!");
+      if (!response.ok) throw new Error("Failed to save the published list");
+  
+      // Log activity (optional: you can still log this in Firebase)
+      console.log(`${adminEmail} published the accepted list`);
+  
+      toast.success("Published list saved successfully!");
     } catch (error) {
       console.error("Error publishing list:", error);
       toast.error("Failed to publish list. Please try again.");
