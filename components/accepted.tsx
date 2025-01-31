@@ -11,6 +11,7 @@ import { setDoc, collection, getFirestore, doc, getDocs, deleteDoc } from "fireb
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
 import { toast } from "react-toastify";
+import { generateExcelFile } from "@/utils/generate_xl"; // Ensure correct import path
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
@@ -94,39 +95,74 @@ const Accepted = () => {
     return stats;
   }, [acceptedApplications]);
 
+  // const handlePublish = async () => {
+  //   if (publishing) return; // Prevent duplicate submissions
+  //   setPublishing(true);
+  
+  //   const db = getFirestore();
+  //   const publishedCollectionRef = collection(db, "PublishedStudents");
+  //   const activityLogsCollectionRef = collection(db, "ActivityLogs");
+  //   const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
+  
+  //   try {
+  //     // Fetch all existing documents in the collection and delete them
+  //     const existingDocs = await getDocs(publishedCollectionRef);
+  //     const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
+  //     await Promise.all(deletePromises);
+  
+  //     // Publish the new list
+  //     const publishPromises = acceptedApplications.map((app) =>
+  //       setDoc(doc(db, "PublishedStudents", app.regNumber), {
+  //         name: app.name,
+  //         gender: app.gender,
+  //         regNumber: app.regNumber,
+  //       })
+  //     );
+  //     await Promise.all(publishPromises);
+  
+  //     // Save activity log
+  //     await setDoc(doc(activityLogsCollectionRef), {
+  //       adminEmail,
+  //       activity: "Published the list of accepted applications",
+  //       timestamp: new Date().toISOString(),
+  //     });
+  
+  //     toast.success("Published list successfully!");
+  //   } catch (error) {
+  //     console.error("Error publishing list:", error);
+  //     toast.error("Failed to publish list. Please try again.");
+  //   } finally {
+  //     setPublishing(false);
+  //   }
+  // };
   const handlePublish = async () => {
-    if (publishing) return; // Prevent duplicate submissions
+    if (publishing) return;
     setPublishing(true);
   
-    const db = getFirestore();
-    const publishedCollectionRef = collection(db, "PublishedStudents");
-    const activityLogsCollectionRef = collection(db, "ActivityLogs");
     const adminEmail = getAuth().currentUser?.email || "Unknown Admin";
   
+    const publishedList = acceptedApplications.map((app) => ({
+      name: app.name,
+      gender: app.gender,
+      regNumber: app.regNumber,
+    }));
+  
     try {
-      // Fetch all existing documents in the collection and delete them
-      const existingDocs = await getDocs(publishedCollectionRef);
-      const deletePromises = existingDocs.docs.map((doc) => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-  
-      // Publish the new list
-      const publishPromises = acceptedApplications.map((app) =>
-        setDoc(doc(db, "PublishedStudents", app.regNumber), {
-          name: app.name,
-          gender: app.gender,
-          regNumber: app.regNumber,
-        })
-      );
-      await Promise.all(publishPromises);
-  
-      // Save activity log
-      await setDoc(doc(activityLogsCollectionRef), {
-        adminEmail,
-        activity: "Published the list of accepted applications",
-        timestamp: new Date().toISOString(),
+      // Send published list to the API route to save it as a JSON file
+      const response = await fetch("/api/savePublishedLists", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ publishedList }),
       });
   
-      toast.success("Published list successfully!");
+      if (!response.ok) throw new Error("Failed to save the published list");
+  
+      // Log activity (optional: you can still log this in Firebase)
+      console.log(`${adminEmail} published the accepted list`);
+  
+      toast.success("Published list saved successfully!");
     } catch (error) {
       console.error("Error publishing list:", error);
       toast.error("Failed to publish list. Please try again.");
@@ -155,6 +191,26 @@ const Accepted = () => {
   
     window.print();
   };
+
+  const handleExportExcel = () => {
+    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme'];
+    const data = acceptedApplications.map(app => ({
+      name: app.name,
+      email: app.email,
+      registration_number: app.regNumber,
+      gender: app.gender,
+      programme: app.programme,
+    }));
+  
+    generateExcelFile({
+      headers,
+      data,
+      fileName: 'Accepted_Applications.xlsx',
+    });
+  
+    toast.success('Excel file generated successfully!');
+  };
+  
   // Pie chart data
   const genderData = {
     labels: ["Male", "Female"],
@@ -266,10 +322,11 @@ const partData = {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-        <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 ml-auto">
+        <Button onClick={handleExportExcel} className="bg-blue-600 hover:bg-blue-700 ml-auto">
           <Printer className="mr-2 h-5 w-5" />
-          Print as PDF
+          Save as Excel
         </Button>
+      
         <Button
           onClick={handlePublish}
           className="bg-green-600 hover:bg-green-700"

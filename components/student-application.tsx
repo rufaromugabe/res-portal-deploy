@@ -33,7 +33,7 @@ interface ApplicationData {
   email: string;
   regNumber: string;
   submittedAt: string;
-  status: "Pending" | "Accepted";
+  status: "Pending" | "Pending";
 }
 
 const StudentApplicationForm: React.FC = () => {
@@ -130,12 +130,12 @@ const StudentApplicationForm: React.FC = () => {
       const girlsCount = girlsSnap.size;
   
       // Determine status based on auto-accept limits
-      let status: "Accepted" | "Pending" = "Pending";
+      let status: "Pending" | "Pending" = "Pending";
       if (
         (profile.gender === "Male" && boysCount < autoAcceptBoysLimit) ||
         (profile.gender === "Female" && girlsCount < autoAcceptGirlsLimit)
       ) {
-        status = "Accepted";
+        status = "Pending";
       }
   
       // Save the application with calculated status
@@ -157,7 +157,7 @@ const StudentApplicationForm: React.FC = () => {
         status,
       });
   
-      toast.success(`Application submitted successfully. Status: ${status}`);
+      toast.success(`Application submitted successfully`);
     } catch (error) {
       console.error("Error submitting application:", error);
       toast.error(

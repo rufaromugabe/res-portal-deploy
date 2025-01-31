@@ -50,9 +50,10 @@ export function useAuth() {
 
   const signIn = async () => {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({
-      hd: 'hit.ac.zw',
-    });
+     provider.setCustomParameters({
+       hd: 'hit.ac.zw',
+     });
+
 
 
     try {
