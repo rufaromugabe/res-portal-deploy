@@ -253,7 +253,7 @@ const partData = {
   }
 
   return (
-    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm">
+    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm overflow-auto">
       <h2 className="text-3xl font-bold mb-6 text-center">Accepted Applications</h2>
 
       {/* Statistics */}

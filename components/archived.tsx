@@ -99,7 +99,7 @@ const Archived = () => {
   // handlePublish function if applicable
 
   return (
-    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm">
+    <div className=" overflow-auto">
       <h2 className="text-3xl font-bold mb-6 text-center">Archived Applications</h2>
 
       {/* Search and Export */}

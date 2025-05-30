@@ -329,7 +329,7 @@ const AdminHostelManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b bg-white">
         <div>
@@ -344,14 +344,14 @@ const AdminHostelManagement: React.FC = () => {
                 Settings
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Hostel Settings</DialogTitle>
                 <DialogDescription>
                   Configure global hostel management settings
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                   <Label htmlFor="gracePeriod">Payment Grace Period (days)</Label>
                   <Input
@@ -412,14 +412,14 @@ const AdminHostelManagement: React.FC = () => {
                 Add Rooms
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Rooms in Range</DialogTitle>
                 <DialogDescription>
                   Add multiple rooms at once with sequential numbering
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                   <Label htmlFor="hostelSelect">Select Hostel</Label>
                   <Select value={newRoomsForm.hostelId} onValueChange={(value) => setNewRoomsForm({ ...newRoomsForm, hostelId: value, floorId: '' })}>
@@ -448,6 +448,11 @@ const AdminHostelManagement: React.FC = () => {
                           {floor.name}
                         </SelectItem>
                       ))}
+
+                      {/* Add option to create new floor */}
+                      <SelectItem value="add-floor" disabled>
+                        + Add New Floor
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -548,14 +553,14 @@ const AdminHostelManagement: React.FC = () => {
                 Add Floor
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Floor</DialogTitle>
                 <DialogDescription>
                   Add a new floor to an existing hostel
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                   <Label htmlFor="floorHostelSelect">Select Hostel</Label>
                   <Select value={newFloorForm.hostelId} onValueChange={(value) => setNewFloorForm({ ...newFloorForm, hostelId: value })}>
@@ -606,14 +611,14 @@ const AdminHostelManagement: React.FC = () => {
                 Add Hostel
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Hostel</DialogTitle>
                 <DialogDescription>
                   Add a new hostel to the system
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                   <Label htmlFor="name">Hostel Name</Label>
                   <Input
@@ -743,12 +748,28 @@ const AdminHostelManagement: React.FC = () => {
             </CardContent>
           </Card>
         ))}
+
+        {/* No hostels message */}
+        {hostels.length === 0 && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-10">
+            <p className="text-gray-500">No hostels found. Please add a new hostel.</p>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="mt-4"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Hostel
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Room Management Modal */}
       {selectedHostel && (
         <Dialog open={!!selectedHostel} onOpenChange={() => setSelectedHostel(null)}>
-          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">            <DialogHeader>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <DialogTitle>{selectedHostel.name} - Room Management</DialogTitle>
@@ -783,7 +804,7 @@ const AdminHostelManagement: React.FC = () => {
               </div>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
               {selectedHostel.floors.map((floor) => (
                 <div key={floor.id} className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">{floor.name}</h3>
