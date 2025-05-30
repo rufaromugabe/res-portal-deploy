@@ -81,7 +81,7 @@ export function AppSidebar() {
     }
 
     // Common items
-    items.push({ title: "Published", icon: CloudUpload, href: "/accepted-students" });
+    // items.push({ title: "Published", icon: CloudUpload, href: "/accepted-students" });
 
     return items;
   }, [userRole]);
