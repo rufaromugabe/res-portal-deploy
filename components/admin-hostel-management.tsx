@@ -42,13 +42,30 @@ import {
   revokeRoomAllocation,
   addRoomsInRange,
   addFloorToHostel,
-  removeRoom
+  removeRoom,
+  removeOccupantFromRoom
 } from '@/data/hostel-data';
 import { getAuth } from 'firebase/auth';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 const AdminHostelManagement: React.FC = () => {
   const [hostels, setHostels] = useState<Hostel[]>([]);
-  const [loading, setLoading] = useState(true);  const [selectedHostel, setSelectedHostel] = useState<Hostel | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedHostel, setSelectedHostel] = useState<Hostel | null>(null);
+    // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+    loading: false
+  });
+  // Track which occupant is being removed for individual loading states
+  const [removingOccupant, setRemovingOccupant] = useState<string | null>(null);
+
+  // Bulk actions state
+  const [selectedOccupants, setSelectedOccupants] = useState<Set<string>>(new Set());
+  const [bulkActionMode, setBulkActionMode] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
@@ -154,30 +171,55 @@ const AdminHostelManagement: React.FC = () => {
       toast.error('Failed to update hostel status');
     }
   };
-
   const handleReserveRoom = async (roomId: string, hostelId: string) => {
-    const days = window.prompt('Reserve room for how many days?', '30');
+    // Find room details for better user feedback
+    let roomNumber = '';
+    if (selectedHostel) {
+      selectedHostel.floors.forEach(floor => {
+        floor.rooms.forEach(room => {
+          if (room.id === roomId) {
+            roomNumber = room.number;
+          }
+        });
+      });
+    }
+
+    const days = window.prompt(`Reserve room ${roomNumber} for how many days?`, '30');
     if (days && !isNaN(Number(days))) {
       try {
         const auth = getAuth();
         const adminEmail = auth.currentUser?.email || 'Unknown Admin';
         
         await reserveRoom(roomId, hostelId, adminEmail, Number(days));
-        toast.success('Room reserved successfully');
+        toast.success(`Room ${roomNumber} reserved successfully for ${days} days`);
         loadData();
       } catch (error) {
-        toast.error('Failed to reserve room');
+        console.error('Error reserving room:', error);
+        toast.error('Failed to reserve room. Please try again.');
       }
     }
-  };
+  };const handleUnreserveRoom = async (roomId: string, hostelId: string) => {
+    // Find room details for better user feedback
+    let roomNumber = '';
+    if (selectedHostel) {
+      selectedHostel.floors.forEach(floor => {
+        floor.rooms.forEach(room => {
+          if (room.id === roomId) {
+            roomNumber = room.number;
+          }
+        });
+      });
+    }
 
-  const handleUnreserveRoom = async (roomId: string, hostelId: string) => {
-    try {
-      await unreserveRoom(roomId, hostelId);
-      toast.success('Room unreserved successfully');
-      loadData();
-    } catch (error) {
-      toast.error('Failed to unreserve room');
+    if (window.confirm(`Are you sure you want to unreserve room ${roomNumber}? This will make it available for allocation.`)) {
+      try {
+        await unreserveRoom(roomId, hostelId);
+        toast.success(`Room ${roomNumber} unreserved successfully`);
+        loadData();
+      } catch (error) {
+        console.error('Error unreserving room:', error);
+        toast.error('Failed to unreserve room. Please try again.');
+      }
     }
   };
 
@@ -305,6 +347,97 @@ const AdminHostelManagement: React.FC = () => {
         toast.error('Failed to remove room');
       }
     }
+  };  const handleRemoveOccupant = (hostel: Hostel, roomId: string, occupantRegNumber: string) => {
+    // Find the room to get more details for the confirmation dialog
+    let roomNumber = '';
+    hostel.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        if (room.id === roomId) {
+          roomNumber = room.number;
+        }
+      });
+    });
+
+    setConfirmDialog({
+      open: true,
+      title: 'Remove Occupant',
+      description: `Are you sure you want to remove ${occupantRegNumber} from room ${roomNumber}? This will also remove their room allocation record and cannot be undone.`,
+      loading: false,
+      onConfirm: async () => {
+        const occupantKey = `${roomId}-${occupantRegNumber}`;
+        setRemovingOccupant(occupantKey);
+        setConfirmDialog(prev => ({ ...prev, loading: true }));
+        
+        try {
+          await removeOccupantFromRoom(hostel.id, roomId, occupantRegNumber);
+          toast.success(`${occupantRegNumber} removed from room ${roomNumber} successfully`);
+          loadData();
+        } catch (error) {
+          console.error('Error removing occupant:', error);
+          toast.error('Failed to remove occupant. Please try again.');
+        } finally {
+          setRemovingOccupant(null);
+          setConfirmDialog(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
+  };
+
+  const handleBulkRemoveOccupants = () => {
+    const occupantList = Array.from(selectedOccupants);
+    if (occupantList.length === 0) return;
+
+    setConfirmDialog({
+      open: true,
+      title: 'Remove Multiple Occupants',
+      description: `Are you sure you want to remove ${occupantList.length} occupant${occupantList.length > 1 ? 's' : ''} from their rooms? This will also remove their room allocation records and cannot be undone.`,
+      loading: false,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }));
+        
+        try {
+          const removePromises = occupantList.map(async (occupantKey) => {
+            const [roomId, regNumber] = occupantKey.split('-');
+            const hostel = selectedHostel;
+            if (hostel) {
+              await removeOccupantFromRoom(hostel.id, roomId, regNumber);
+            }
+          });
+
+          await Promise.all(removePromises);
+          toast.success(`${occupantList.length} occupant${occupantList.length > 1 ? 's' : ''} removed successfully`);
+          setSelectedOccupants(new Set());
+          setBulkActionMode(false);
+          loadData();
+        } catch (error) {
+          console.error('Error removing occupants:', error);
+          toast.error('Failed to remove some occupants. Please try again.');
+        } finally {
+          setConfirmDialog(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
+  };
+
+  const toggleOccupantSelection = (roomId: string, regNumber: string) => {
+    const occupantKey = `${roomId}-${regNumber}`;
+    const newSelected = new Set(selectedOccupants);
+    
+    if (newSelected.has(occupantKey)) {
+      newSelected.delete(occupantKey);
+    } else {
+      newSelected.add(occupantKey);
+    }
+    
+    setSelectedOccupants(newSelected);
+  };
+
+  const selectAllOccupantsInRoom = (roomId: string, occupants: string[]) => {
+    const newSelected = new Set(selectedOccupants);
+    occupants.forEach(regNumber => {
+      newSelected.add(`${roomId}-${regNumber}`);
+    });
+    setSelectedOccupants(newSelected);
   };
 
   const getRoomStatusColor = (room: Room) => {
@@ -776,8 +909,28 @@ const AdminHostelManagement: React.FC = () => {
                   <DialogDescription>
                     Manage individual rooms, capacity, and reservations
                   </DialogDescription>
-                </div>
-                <div className="flex gap-2">
+                </div>                <div className="flex gap-2">
+                  {bulkActionMode && selectedOccupants.size > 0 && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleBulkRemoveOccupants}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove {selectedOccupants.size} Selected
+                    </Button>
+                  )}
+                  <Button 
+                    variant={bulkActionMode ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => {
+                      setBulkActionMode(!bulkActionMode);
+                      setSelectedOccupants(new Set());
+                    }}
+                  >
+                    <Users className="w-4 h-4 mr-1" />
+                    {bulkActionMode ? 'Exit Bulk Mode' : 'Bulk Actions'}
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -874,17 +1027,77 @@ const AdminHostelManagement: React.FC = () => {
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>
-                            </div>
-                            
-                            {room.occupants.length > 0 && (
-                              <div className="pt-2 border-t">
-                                <p className="text-xs font-medium mb-1">Occupants:</p>
-                                <div className="space-y-1">
-                                  {room.occupants.map((regNumber, index) => (
-                                    <div key={index} className="text-xs flex items-center justify-between">
-                                      <span>{regNumber}</span>
-                                    </div>
-                                  ))}
+                            </div>                              {room.occupants.length > 0 && (
+                              <div className="pt-3 border-t border-gray-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-xs font-semibold text-gray-700">Occupants ({room.occupants.length}/{room.capacity})</p>
+                                  <div className="flex items-center gap-2">
+                                    {bulkActionMode && room.occupants.length > 0 && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => selectAllOccupantsInRoom(room.id, room.occupants)}
+                                        className="h-6 text-xs px-2"
+                                      >
+                                        Select All
+                                      </Button>
+                                    )}
+                                    <Badge variant="outline" className="text-xs">
+                                      {room.capacity - room.occupants.length} space{room.capacity - room.occupants.length !== 1 ? 's' : ''} left
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  {room.occupants.map((regNumber, index) => {
+                                    const occupantKey = `${room.id}-${regNumber}`;
+                                    const isRemoving = removingOccupant === occupantKey;
+                                    const isSelected = selectedOccupants.has(occupantKey);
+                                    
+                                    return (
+                                      <div 
+                                        key={index} 
+                                        className={`flex items-center justify-between p-2 rounded-md border transition-colors ${
+                                          isSelected 
+                                            ? 'bg-blue-50 border-blue-200' 
+                                            : 'bg-gray-50 border-gray-200'
+                                        } ${bulkActionMode ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+                                        onClick={bulkActionMode ? () => toggleOccupantSelection(room.id, regNumber) : undefined}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {bulkActionMode && (
+                                            <input
+                                              type="checkbox"
+                                              checked={isSelected}
+                                              onChange={() => toggleOccupantSelection(room.id, regNumber)}
+                                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                              onClick={(e) => e.stopPropagation()}
+                                            />
+                                          )}
+                                          <div className={`w-2 h-2 rounded-full ${isRemoving ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
+                                          <span className="text-xs font-medium text-gray-900">{regNumber}</span>
+                                          {isRemoving && (
+                                            <span className="text-xs text-yellow-600 italic">Removing...</span>
+                                          )}
+                                        </div>
+                                        {!bulkActionMode && (
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleRemoveOccupant(selectedHostel, room.id, regNumber)}
+                                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            title={`Remove ${regNumber} from room`}
+                                            disabled={isRemoving}
+                                          >
+                                            {isRemoving ? (
+                                              <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
+                                            ) : (
+                                              <XCircle className="w-4 h-4" />
+                                            )}
+                                          </Button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -898,6 +1111,19 @@ const AdminHostelManagement: React.FC = () => {
             </div>
           </DialogContent>        </Dialog>
       )}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        onConfirm={confirmDialog.onConfirm}
+        loading={confirmDialog.loading}
+        variant="destructive"
+        confirmText="Remove"
+        cancelText="Cancel"
+      />
       </div>
     </div>
   );

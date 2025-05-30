@@ -251,21 +251,35 @@ export const reserveRoom = async (
  */
 export const unreserveRoom = async (roomId: string, hostelId: string): Promise<void> => {
   try {
+    console.log(`Attempting to unreserve room ${roomId} in hostel ${hostelId}`);
+    
     const hostel = await fetchHostelById(hostelId);
-    if (hostel) {
-      const updatedHostel = { ...hostel };
-      updatedHostel.floors.forEach(floor => {
-        floor.rooms.forEach(room => {
-          if (room.id === roomId) {
-            room.isReserved = false;
-            room.reservedBy = undefined;
-            room.reservedUntil = undefined;
-          }
-        });
-      });
-      
-      await updateHostel(hostelId, updatedHostel);
+    if (!hostel) {
+      throw new Error(`Hostel with ID ${hostelId} not found`);
     }
+
+    const updatedHostel = { ...hostel };
+    let roomFound = false;
+    
+    updatedHostel.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        if (room.id === roomId) {
+          console.log(`Found room ${room.number}, unreserving...`);
+          room.isReserved = false;
+          room.reservedBy = undefined;
+          room.reservedUntil = undefined;
+          roomFound = true;
+        }
+      });
+    });
+
+    if (!roomFound) {
+      throw new Error(`Room with ID ${roomId} not found in hostel ${hostelId}`);
+    }
+    
+    console.log(`Updating hostel data...`);
+    await updateHostel(hostelId, updatedHostel);
+    console.log(`Room ${roomId} successfully unreserved`);
   } catch (error) {
     console.error("Error unreserving room:", error);
     throw error;
@@ -514,6 +528,66 @@ export const removeRoom = async (hostelId: string, roomId: string): Promise<void
     await updateHostel(hostelId, hostel);
   } catch (error) {
     console.error("Error removing room:", error);
+    throw error;
+  }
+};
+
+/**
+ * Remove an occupant from a room and clean up allocation
+ */
+export const removeOccupantFromRoom = async (
+  hostelId: string,
+  roomId: string,
+  studentRegNumber: string
+): Promise<void> => {
+  try {
+    // Remove student from room
+    const hostel = await fetchHostelById(hostelId);
+    if (!hostel) {
+      throw new Error("Hostel not found");
+    }
+
+    const updatedHostel = { ...hostel };
+    let roomFound = false;
+    
+    updatedHostel.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        if (room.id === roomId) {
+          room.occupants = room.occupants.filter(reg => reg !== studentRegNumber);
+          room.isAvailable = room.occupants.length < room.capacity;
+          roomFound = true;
+        }
+      });
+    });
+
+    if (!roomFound) {
+      throw new Error("Room not found");
+    }
+
+    // Update total occupancy
+    const totalOccupancy = updatedHostel.floors.reduce((total, floor) => 
+      total + floor.rooms.reduce((floorTotal, room) => floorTotal + room.occupants.length, 0), 0
+    );
+    updatedHostel.currentOccupancy = totalOccupancy;
+
+    // Update hostel data
+    await updateHostel(hostelId, updatedHostel);
+
+    // Remove allocation record
+    const allocationsCollection = collection(db, "roomAllocations");
+    const q = query(
+      allocationsCollection,
+      where("studentRegNumber", "==", studentRegNumber),
+      where("roomId", "==", roomId),
+      where("hostelId", "==", hostelId)
+    );
+    
+    const allocationsSnap = await getDocs(q);
+    const deletePromises = allocationsSnap.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+  } catch (error) {
+    console.error("Error removing occupant from room:", error);
     throw error;
   }
 };
