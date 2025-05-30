@@ -260,14 +260,14 @@ export const unreserveRoom = async (roomId: string, hostelId: string): Promise<v
 
     const updatedHostel = { ...hostel };
     let roomFound = false;
-    
-    updatedHostel.floors.forEach(floor => {
+      updatedHostel.floors.forEach(floor => {
       floor.rooms.forEach(room => {
         if (room.id === roomId) {
           console.log(`Found room ${room.number}, unreserving...`);
           room.isReserved = false;
-          room.reservedBy = undefined;
-          room.reservedUntil = undefined;
+          // Remove the reservation fields entirely instead of setting to undefined
+          delete room.reservedBy;
+          delete room.reservedUntil;
           roomFound = true;
         }
       });

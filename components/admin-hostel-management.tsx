@@ -170,8 +170,7 @@ const AdminHostelManagement: React.FC = () => {
     } catch (error) {
       toast.error('Failed to update hostel status');
     }
-  };
-  const handleReserveRoom = async (roomId: string, hostelId: string) => {
+  };  const handleReserveRoom = async (roomId: string, hostelId: string) => {
     // Find room details for better user feedback
     let roomNumber = '';
     if (selectedHostel) {
@@ -192,6 +191,22 @@ const AdminHostelManagement: React.FC = () => {
         
         await reserveRoom(roomId, hostelId, adminEmail, Number(days));
         toast.success(`Room ${roomNumber} reserved successfully for ${days} days`);
+        
+        // Update selectedHostel state immediately
+        if (selectedHostel) {
+          const updatedHostel = { ...selectedHostel };
+          updatedHostel.floors.forEach(floor => {
+            floor.rooms.forEach(room => {
+              if (room.id === roomId) {
+                room.isReserved = true;
+                room.reservedBy = adminEmail;
+                room.reservedUntil = new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString();
+              }
+            });
+          });
+          setSelectedHostel(updatedHostel);
+        }
+        
         loadData();
       } catch (error) {
         console.error('Error reserving room:', error);
@@ -215,6 +230,22 @@ const AdminHostelManagement: React.FC = () => {
       try {
         await unreserveRoom(roomId, hostelId);
         toast.success(`Room ${roomNumber} unreserved successfully`);
+          // Update selectedHostel state immediately
+        if (selectedHostel) {
+          const updatedHostel = { ...selectedHostel };
+          updatedHostel.floors.forEach(floor => {
+            floor.rooms.forEach(room => {
+              if (room.id === roomId) {
+                room.isReserved = false;
+                // Remove the reservation fields entirely instead of setting to undefined
+                delete room.reservedBy;
+                delete room.reservedUntil;
+              }
+            });
+          });
+          setSelectedHostel(updatedHostel);
+        }
+        
         loadData();
       } catch (error) {
         console.error('Error unreserving room:', error);
@@ -222,7 +253,6 @@ const AdminHostelManagement: React.FC = () => {
       }
     }
   };
-
   const handleUpdateRoomCapacity = async (hostel: Hostel, roomId: string, newCapacity: string) => {
     const capacity = Number(newCapacity);
     if (isNaN(capacity) || capacity < 1 || capacity > settings.maxRoomCapacity) {
@@ -248,6 +278,12 @@ const AdminHostelManagement: React.FC = () => {
 
       await updateHostel(hostel.id, updatedHostel);
       toast.success('Room capacity updated successfully');
+      
+      // Update selectedHostel state immediately
+      if (selectedHostel && selectedHostel.id === hostel.id) {
+        setSelectedHostel(updatedHostel);
+      }
+      
       loadData();
     } catch (error) {
       toast.error('Failed to update room capacity');
@@ -263,7 +299,6 @@ const AdminHostelManagement: React.FC = () => {
       toast.error('Failed to update settings');
     }
   };
-
   const handleAddRoomsInRange = async () => {
     try {
       if (!newRoomsForm.hostelId || !newRoomsForm.floorId) {
@@ -291,6 +326,52 @@ const AdminHostelManagement: React.FC = () => {
       );
 
       toast.success(`Rooms ${newRoomsForm.prefix}${newRoomsForm.startNumber}${newRoomsForm.suffix} to ${newRoomsForm.prefix}${newRoomsForm.endNumber}${newRoomsForm.suffix} added successfully`);
+      
+      // Update selectedHostel state immediately
+      if (selectedHostel && selectedHostel.id === newRoomsForm.hostelId) {
+        const updatedHostel = { ...selectedHostel };
+        const floor = updatedHostel.floors.find(f => f.id === newRoomsForm.floorId);
+        if (floor) {
+          // Create new rooms to add to the floor
+          const newRooms = [];
+          let totalCapacityAdded = 0;
+          
+          for (let i = newRoomsForm.startNumber; i <= newRoomsForm.endNumber; i++) {
+            const roomNumber = `${newRoomsForm.prefix}${i}${newRoomsForm.suffix}`;
+            const roomId = `${newRoomsForm.hostelId}_${newRoomsForm.floorId}_${roomNumber}`;
+            
+            // Check if room already exists
+            const existingRoom = floor.rooms.find(r => r.number === roomNumber);
+            if (!existingRoom) {
+              const newRoom = {
+                id: roomId,
+                number: roomNumber,
+                floor: floor.name,
+                floorName: floor.name,
+                hostelName: updatedHostel.name,
+                price: updatedHostel.pricePerSemester,
+                capacity: newRoomsForm.capacity,
+                occupants: [],
+                gender: newRoomsForm.gender,
+                isReserved: false,
+                isAvailable: true,
+                features
+              };
+              
+              newRooms.push(newRoom);
+              totalCapacityAdded += newRoomsForm.capacity;
+            }
+          }
+          
+          // Add new rooms to the floor
+          floor.rooms.push(...newRooms);
+          
+          // Update total capacity
+          updatedHostel.totalCapacity += totalCapacityAdded;
+          
+          setSelectedHostel(updatedHostel);
+        }
+      }
       
       setNewRoomsForm({
         hostelId: '',
@@ -336,18 +417,30 @@ const AdminHostelManagement: React.FC = () => {
       toast.error('Failed to add floor');
     }
   };
-
   const handleRemoveRoom = async (hostelId: string, roomId: string, roomNumber: string) => {
     if (window.confirm(`Are you sure you want to remove room ${roomNumber}? This action cannot be undone.`)) {
       try {
         await removeRoom(hostelId, roomId);
         toast.success(`Room ${roomNumber} removed successfully`);
+        
+        // Update selectedHostel state immediately
+        if (selectedHostel && selectedHostel.id === hostelId) {
+          const updatedHostel = { ...selectedHostel };
+          updatedHostel.floors.forEach(floor => {
+            const roomIndex = floor.rooms.findIndex(r => r.id === roomId);
+            if (roomIndex !== -1) {
+              floor.rooms.splice(roomIndex, 1);
+            }
+          });
+          setSelectedHostel(updatedHostel);
+        }
+        
         loadData();
       } catch (error) {
         toast.error('Failed to remove room');
       }
     }
-  };  const handleRemoveOccupant = (hostel: Hostel, roomId: string, occupantRegNumber: string) => {
+  };const handleRemoveOccupant = (hostel: Hostel, roomId: string, occupantRegNumber: string) => {
     // Find the room to get more details for the confirmation dialog
     let roomNumber = '';
     hostel.floors.forEach(floor => {
@@ -366,10 +459,29 @@ const AdminHostelManagement: React.FC = () => {
       onConfirm: async () => {
         const occupantKey = `${roomId}-${occupantRegNumber}`;
         setRemovingOccupant(occupantKey);
-        setConfirmDialog(prev => ({ ...prev, loading: true }));
-        
-        try {
+        setConfirmDialog(prev => ({ ...prev, loading: true }));        try {
           await removeOccupantFromRoom(hostel.id, roomId, occupantRegNumber);
+          
+          // Update selectedHostel state immediately
+          if (selectedHostel) {
+            const updatedHostel = {
+              ...selectedHostel,
+              floors: selectedHostel.floors.map(floor => ({
+                ...floor,
+                rooms: floor.rooms.map(room => {
+                  if (room.id === roomId) {
+                    return {
+                      ...room,
+                      occupants: room.occupants.filter(regNumber => regNumber !== occupantRegNumber)
+                    };
+                  }
+                  return room;
+                })
+              }))
+            };
+            setSelectedHostel(updatedHostel);
+          }
+          
           toast.success(`${occupantRegNumber} removed from room ${roomNumber} successfully`);
           loadData();
         } catch (error) {
@@ -394,8 +506,7 @@ const AdminHostelManagement: React.FC = () => {
       loading: false,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, loading: true }));
-        
-        try {
+          try {
           const removePromises = occupantList.map(async (occupantKey) => {
             const [roomId, regNumber] = occupantKey.split('-');
             const hostel = selectedHostel;
@@ -405,6 +516,23 @@ const AdminHostelManagement: React.FC = () => {
           });
 
           await Promise.all(removePromises);
+          
+          // Update selectedHostel state immediately
+          if (selectedHostel) {
+            const updatedHostel = { ...selectedHostel };
+            updatedHostel.floors.forEach(floor => {
+              floor.rooms.forEach(room => {
+                occupantList.forEach(occupantKey => {
+                  const [roomId, regNumber] = occupantKey.split('-');
+                  if (room.id === roomId) {
+                    room.occupants = room.occupants.filter(occ => occ !== regNumber);
+                  }
+                });
+              });
+            });
+            setSelectedHostel(updatedHostel);
+          }
+          
           toast.success(`${occupantList.length} occupant${occupantList.length > 1 ? 's' : ''} removed successfully`);
           setSelectedOccupants(new Set());
           setBulkActionMode(false);
