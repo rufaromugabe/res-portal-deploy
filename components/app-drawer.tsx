@@ -96,16 +96,15 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   if (loading || !userRole) {
     return null;
   }
-
   return (
-    <>
+    <div className="flex flex-col h-screen w-screen">
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full h-16 bg-blue-900 text-white shadow z-50 flex items-center px-4 md:hidden">
+      <header className="h-16 bg-blue-900 text-white shadow z-50 flex items-center px-4 flex-shrink-0">
         {/* Drawer Toggle Button (Only visible on small screens) */}
         <Button
           variant="ghost"
           onClick={toggleDrawer}
-          className="flex items-center space-x-2 md:hidden"
+          className="flex items-center space-x-2"
         >
           <Menu className="h-10 w-10" />
         </Button>
@@ -177,12 +176,10 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-      </div>
-
-      {/* Overlay to close the drawer */}
+      </div>      {/* Overlay to close the drawer */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={toggleDrawer}
           role="button"
           tabIndex={-1}
@@ -190,9 +187,9 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Content */}
-      <main className="pt-16">
-        <div className="w-full h-full">{children}</div>
+      <main className="flex-1 h-full overflow-auto">
+        <div className="w-full h-full p-4">{children}</div>
       </main>
-    </>
+    </div>
   );
 }
