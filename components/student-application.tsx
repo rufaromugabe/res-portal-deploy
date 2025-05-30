@@ -17,6 +17,8 @@ import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } fro
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
 import { StudentProfile } from "./student-profile";
+import { fetchHostels, fetchStudentAllocations } from "@/data/hostel-data";
+import { Hostel } from "@/types/hostel";
 
 // Define Zod schema for validation
 const StudentApplicationSchema = z.object({
@@ -33,7 +35,7 @@ interface ApplicationData {
   email: string;
   regNumber: string;
   submittedAt: string;
-  status: "Pending" | "Pending";
+  status: "Pending" | "Accepted";
 }
 
 const StudentApplicationForm: React.FC = () => {
@@ -41,6 +43,8 @@ const StudentApplicationForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true); // State to manage loading
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [roomAllocation, setRoomAllocation] = useState<any>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentApplicationSchema),
@@ -48,7 +52,6 @@ const StudentApplicationForm: React.FC = () => {
       preferredHostel: "",
     },
   });
-
   // Fetch authenticated user's profile and application
   useEffect(() => {
     const fetchProfileAndApplication = async () => {
@@ -71,6 +74,16 @@ const StudentApplicationForm: React.FC = () => {
           const applicationSnap = await getDoc(applicationDoc);
           if (applicationSnap.exists()) {
             setApplication(applicationSnap.data() as ApplicationData);
+          }          // Fetch hostels
+          const hostelData = await fetchHostels();
+          setHostels(hostelData);
+
+          // Check for room allocation
+          if (profileSnap.exists()) {
+            const allocations = await fetchStudentAllocations(regNumber);
+            if (allocations.length > 0) {
+              setRoomAllocation(allocations[0]);
+            }
           }
         } catch (error) {
           console.error("Error fetching data:", error);
@@ -157,7 +170,12 @@ const StudentApplicationForm: React.FC = () => {
         status,
       });
   
-      toast.success(`Application submitted successfully`);
+      toast.success(`Application submitted successfully! You can now proceed to room selection.`);
+      
+      // Redirect to room selection after successful application
+      setTimeout(() => {
+        window.location.href = '/student/room-selection';
+      }, 2000);
     } catch (error) {
       console.error("Error submitting application:", error);
       toast.error(
@@ -191,34 +209,33 @@ const StudentApplicationForm: React.FC = () => {
       );
     }
   };
-
   // Skeleton Loading UI
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm animate-pulse">
-        <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto mb-4"></div>
-        <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto mb-8"></div>
-        <div className="space-y-4">
-          <div className="h-4 bg-gray-300 rounded"></div>
-          <div className="h-4 bg-gray-300 rounded w-5/6"></div>
-          <div className="h-4 bg-gray-300 rounded"></div>
+      <div className="flex items-center justify-center h-full">
+        <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm animate-pulse">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto mb-4"></div>
+          <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto mb-8"></div>
+          <div className="space-y-4">
+            <div className="h-4 bg-gray-300 rounded"></div>
+            <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-300 rounded"></div>
+          </div>
+          <div className="h-12 bg-gray-300 rounded mt-8"></div>
         </div>
-        <div className="h-12 bg-gray-300 rounded mt-8"></div>
       </div>
     );
   }
-
   if (application) {
     return (
-      <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
-        <h2 className="text-3xl font-bold mb-6 text-center">
-          Your Application
-        </h2>
-        <p className="text-gray-600 mb-8 text-center">
-          Below is your submitted application. You can delete it to submit a new one.
-        </p>
-
-        <div className="bg-gray-100 p-6 rounded-lg">
+      <div className="flex items-center justify-center h-full overflow-auto">
+        <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+          <h2 className="text-3xl font-bold mb-6 text-center">
+            Your Application
+          </h2>
+          <p className="text-gray-600 mb-8 text-center">
+            Below is your submitted application. You can delete it to submit a new one.
+          </p><div className="bg-gray-100 p-6 rounded-lg">
           <p>
             <strong>Name:</strong> {application.name}
           </p>
@@ -234,27 +251,56 @@ const StudentApplicationForm: React.FC = () => {
           <p>
             <strong>Submitted At:</strong> {new Date(application.submittedAt).toLocaleString()}
           </p>
+          <p>
+            <strong>Status:</strong> 
+            <span className={`ml-2 px-2 py-1 rounded text-sm ${
+              application.status === 'Accepted' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {application.status}
+            </span>
+          </p>
+          {roomAllocation && (
+            <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
+              <p className="font-semibold text-blue-800">Room Allocation:</p>
+              <p><strong>Hostel:</strong> {roomAllocation.hostelName}</p>
+              <p><strong>Room:</strong> {roomAllocation.roomNumber}</p>
+              <p><strong>Floor:</strong> {roomAllocation.floor}</p>
+              <p><strong>Allocated At:</strong> {new Date(roomAllocation.allocatedAt).toLocaleString()}</p>
+            </div>
+          )}
         </div>
 
-        <Button
+        {!roomAllocation && application.status === 'Accepted' && (
+          <div className="mt-6 p-4 bg-green-50 rounded border border-green-200">
+            <p className="text-green-800 font-medium">🎉 Your application has been accepted!</p>
+            <p className="text-green-700 mt-2">You can now proceed to select your room.</p>
+            <Button
+              onClick={() => window.location.href = '/student/room-selection'}
+              className="mt-3 bg-green-600 hover:bg-green-700"
+            >
+              Select Room
+            </Button>
+          </div>
+        )}        <Button
           onClick={deleteApplication}
           className="w-full mt-6 text-lg py-6"
           variant="destructive"
         >
           Delete Application
         </Button>
+        </div>
       </div>
     );
   }
-
   return (
-    <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
-      <h2 className="text-3xl font-bold mb-6 text-center">
-        On-campus Res Application
-      </h2>
-      <p className="text-gray-600 mb-8 text-center">
-        Note: We will use data in your profile. Please ensure it is correct.
-      </p>
+    <div className="flex items-center justify-center h-full overflow-auto">
+      <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+        <h2 className="text-3xl font-bold mb-6 text-center">
+          On-campus Res Application
+        </h2>
+        <p className="text-gray-600 mb-8 text-center">
+          Note: We will use data in your profile. Please ensure it is correct.
+        </p>
 
       <Form {...form}>
         <form
@@ -268,16 +314,17 @@ const StudentApplicationForm: React.FC = () => {
               <FormItem>
                 <FormLabel className="text-lg font-medium">
                   Preferred Hostel
-                </FormLabel>
-                <FormControl>
+                </FormLabel>                <FormControl>
                   <select
                     className="form-select block w-full mt-1"
                     {...field}
                   >
                     <option value="">Select a hostel</option>
-                    <option value="Hostel 1">Hostel 1 (560)</option>
-                    <option value="Other hostels">Other Hostel (460)</option>
-                    {/* Add other hostel options here */}
+                    {hostels.map((hostel) => (
+                      <option key={hostel.id} value={hostel.name}>
+                        {hostel.name} (${hostel.pricePerSemester}/semester)
+                      </option>
+                    ))}
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -290,9 +337,9 @@ const StudentApplicationForm: React.FC = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? "Submitting..." : "Submit Application"}
-          </Button>
-        </form>
+          </Button>        </form>
       </Form>
+      </div>
     </div>
   );
 };

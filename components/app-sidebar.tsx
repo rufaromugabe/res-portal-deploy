@@ -14,6 +14,8 @@ import {
   SquareArrowOutUpRightIcon,
   UserRound,
   Users,
+  Building,
+  Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,18 +63,17 @@ export function AppSidebar() {
   const navigationItems = React.useMemo(() => {
     if (!userRole) return [];
 
-    const items = [];
-
-    if (userRole === "user") {
+    const items = [];    if (userRole === "user") {
       items.push(
         { title: "Profile", icon: UserRound, href: "/student/profile" },
-        { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" }
-      );
-    } else if (userRole === "admin") {
+        { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" },
+        { title: "Room Selection", icon: Home, href: "/student/room-selection" }
+      );} else if (userRole === "admin") {
       items.push(
         { title: "Accounts", icon: Users, href: "/admin/accounts" },
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
+        { title: "Hostels", icon: Building, href: "/admin/hostels" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
         { title: "Activity logs", icon: Activity, href: "/admin/logs" },
         {title: "Settings", icon: Settings, href: "/admin/settings"}

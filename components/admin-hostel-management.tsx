@@ -1,0 +1,885 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from 'react-toastify';
+import {
+  Building,
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  Bed,
+  MapPin,
+  DollarSign,
+  Settings,
+  Lock,
+  Unlock,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Eye
+} from 'lucide-react';
+import { Hostel, Room, RoomAllocation, HostelSettings } from '@/types/hostel';
+import {
+  fetchHostels,
+  createHostel,
+  updateHostel,
+  deleteHostel,
+  reserveRoom,
+  unreserveRoom,
+  fetchHostelSettings,
+  updateHostelSettings,
+  revokeRoomAllocation,
+  addRoomsInRange,
+  addFloorToHostel,
+  removeRoom
+} from '@/data/hostel-data';
+import { getAuth } from 'firebase/auth';
+
+const AdminHostelManagement: React.FC = () => {
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [loading, setLoading] = useState(true);  const [selectedHostel, setSelectedHostel] = useState<Hostel | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isAddRoomsDialogOpen, setIsAddRoomsDialogOpen] = useState(false);
+  const [isAddFloorDialogOpen, setIsAddFloorDialogOpen] = useState(false);
+  const [settings, setSettings] = useState<HostelSettings>({
+    paymentGracePeriod: 7,
+    autoRevokeUnpaidAllocations: true,
+    maxRoomCapacity: 4,
+    allowMixedGender: false
+  });
+  const [newHostel, setNewHostel] = useState({
+    name: '',
+    description: '',
+    pricePerSemester: 0,
+    gender: 'Mixed' as 'Male' | 'Female' | 'Mixed',
+    features: ''
+  });
+
+  const [newRoomsForm, setNewRoomsForm] = useState({
+    hostelId: '',
+    floorId: '',
+    startNumber: 1,
+    endNumber: 10,
+    prefix: '',
+    suffix: '',
+    capacity: 2,
+    gender: 'Mixed' as 'Male' | 'Female' | 'Mixed',
+    features: ''
+  });
+
+  const [newFloorForm, setNewFloorForm] = useState({
+    hostelId: '',
+    floorNumber: '',
+    floorName: ''
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [hostelData, settingsData] = await Promise.all([
+        fetchHostels(),
+        fetchHostelSettings()
+      ]);
+      setHostels(hostelData);
+      setSettings(settingsData);
+    } catch (error) {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateHostel = async () => {
+    try {
+      const hostelData: Omit<Hostel, 'id'> = {
+        ...newHostel,
+        totalCapacity: 0,
+        currentOccupancy: 0,
+        isActive: true,
+        floors: [],
+        features: newHostel.features.split(',').map(f => f.trim()).filter(Boolean)
+      };
+
+      await createHostel(hostelData);
+      toast.success('Hostel created successfully');
+      
+      setNewHostel({
+        name: '',
+        description: '',
+        pricePerSemester: 0,
+        gender: 'Mixed',
+        features: ''
+      });
+      setIsCreateDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to create hostel');
+    }
+  };
+
+  const handleDeleteHostel = async (hostelId: string) => {
+    if (window.confirm('Are you sure you want to delete this hostel? This action cannot be undone.')) {
+      try {
+        await deleteHostel(hostelId);
+        toast.success('Hostel deleted successfully');
+        loadData();
+      } catch (error) {
+        toast.error('Failed to delete hostel');
+      }
+    }
+  };
+
+  const handleToggleHostelStatus = async (hostel: Hostel) => {
+    try {
+      await updateHostel(hostel.id, { isActive: !hostel.isActive });
+      toast.success(`Hostel ${hostel.isActive ? 'deactivated' : 'activated'} successfully`);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to update hostel status');
+    }
+  };
+
+  const handleReserveRoom = async (roomId: string, hostelId: string) => {
+    const days = window.prompt('Reserve room for how many days?', '30');
+    if (days && !isNaN(Number(days))) {
+      try {
+        const auth = getAuth();
+        const adminEmail = auth.currentUser?.email || 'Unknown Admin';
+        
+        await reserveRoom(roomId, hostelId, adminEmail, Number(days));
+        toast.success('Room reserved successfully');
+        loadData();
+      } catch (error) {
+        toast.error('Failed to reserve room');
+      }
+    }
+  };
+
+  const handleUnreserveRoom = async (roomId: string, hostelId: string) => {
+    try {
+      await unreserveRoom(roomId, hostelId);
+      toast.success('Room unreserved successfully');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to unreserve room');
+    }
+  };
+
+  const handleUpdateRoomCapacity = async (hostel: Hostel, roomId: string, newCapacity: string) => {
+    const capacity = Number(newCapacity);
+    if (isNaN(capacity) || capacity < 1 || capacity > settings.maxRoomCapacity) {
+      toast.error(`Capacity must be between 1 and ${settings.maxRoomCapacity}`);
+      return;
+    }
+
+    try {
+      const updatedHostel = { ...hostel };
+      updatedHostel.floors.forEach(floor => {
+        floor.rooms.forEach(room => {
+          if (room.id === roomId) {
+            room.capacity = capacity;
+            // Check if room should be marked as unavailable due to occupancy
+            if (room.occupants.length >= capacity) {
+              room.isAvailable = false;
+            } else {
+              room.isAvailable = true;
+            }
+          }
+        });
+      });
+
+      await updateHostel(hostel.id, updatedHostel);
+      toast.success('Room capacity updated successfully');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to update room capacity');
+    }
+  };
+
+  const handleUpdateSettings = async () => {
+    try {
+      await updateHostelSettings(settings);
+      toast.success('Settings updated successfully');
+      setIsSettingsDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to update settings');
+    }
+  };
+
+  const handleAddRoomsInRange = async () => {
+    try {
+      if (!newRoomsForm.hostelId || !newRoomsForm.floorId) {
+        toast.error('Please select hostel and floor');
+        return;
+      }
+
+      if (newRoomsForm.startNumber > newRoomsForm.endNumber) {
+        toast.error('Start number must be less than or equal to end number');
+        return;
+      }
+
+      const features = newRoomsForm.features.split(',').map(f => f.trim()).filter(Boolean);
+
+      await addRoomsInRange(
+        newRoomsForm.hostelId,
+        newRoomsForm.floorId,
+        newRoomsForm.startNumber,
+        newRoomsForm.endNumber,
+        newRoomsForm.prefix,
+        newRoomsForm.suffix,
+        newRoomsForm.capacity,
+        newRoomsForm.gender,
+        features
+      );
+
+      toast.success(`Rooms ${newRoomsForm.prefix}${newRoomsForm.startNumber}${newRoomsForm.suffix} to ${newRoomsForm.prefix}${newRoomsForm.endNumber}${newRoomsForm.suffix} added successfully`);
+      
+      setNewRoomsForm({
+        hostelId: '',
+        floorId: '',
+        startNumber: 1,
+        endNumber: 10,
+        prefix: '',
+        suffix: '',
+        capacity: 2,
+        gender: 'Mixed',
+        features: ''
+      });
+      setIsAddRoomsDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to add rooms');
+    }
+  };
+
+  const handleAddFloor = async () => {
+    try {
+      if (!newFloorForm.hostelId || !newFloorForm.floorNumber || !newFloorForm.floorName) {
+        toast.error('Please fill in all floor details');
+        return;
+      }
+
+      await addFloorToHostel(
+        newFloorForm.hostelId,
+        newFloorForm.floorNumber,
+        newFloorForm.floorName
+      );
+
+      toast.success(`Floor ${newFloorForm.floorName} added successfully`);
+      
+      setNewFloorForm({
+        hostelId: '',
+        floorNumber: '',
+        floorName: ''
+      });
+      setIsAddFloorDialogOpen(false);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to add floor');
+    }
+  };
+
+  const handleRemoveRoom = async (hostelId: string, roomId: string, roomNumber: string) => {
+    if (window.confirm(`Are you sure you want to remove room ${roomNumber}? This action cannot be undone.`)) {
+      try {
+        await removeRoom(hostelId, roomId);
+        toast.success(`Room ${roomNumber} removed successfully`);
+        loadData();
+      } catch (error) {
+        toast.error('Failed to remove room');
+      }
+    }
+  };
+
+  const getRoomStatusColor = (room: Room) => {
+    if (!room.isAvailable) return 'bg-red-100 border-red-200';
+    if (room.isReserved) return 'bg-yellow-100 border-yellow-200';
+    if (room.occupants.length === 0) return 'bg-green-100 border-green-200';
+    return 'bg-blue-100 border-blue-200';
+  };
+
+  const getRoomStatusIcon = (room: Room) => {
+    if (!room.isAvailable) return <XCircle className="w-4 h-4 text-red-500" />;
+    if (room.isReserved) return <Clock className="w-4 h-4 text-yellow-500" />;
+    if (room.occupants.length === 0) return <CheckCircle className="w-4 h-4 text-green-500" />;
+    return <Users className="w-4 h-4 text-blue-500" />;
+  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b bg-white">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Hostel Management</h2>
+          <p className="text-gray-600">Manage hostels, rooms, and allocations</p>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Hostel Settings</DialogTitle>
+                <DialogDescription>
+                  Configure global hostel management settings
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="gracePeriod">Payment Grace Period (days)</Label>
+                  <Input
+                    id="gracePeriod"
+                    type="number"
+                    value={settings.paymentGracePeriod}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      paymentGracePeriod: Number(e.target.value)
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="maxCapacity">Maximum Room Capacity</Label>
+                  <Input
+                    id="maxCapacity"
+                    type="number"
+                    value={settings.maxRoomCapacity}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      maxRoomCapacity: Number(e.target.value)
+                    })}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="autoRevoke"
+                    checked={settings.autoRevokeUnpaidAllocations}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      autoRevokeUnpaidAllocations: e.target.checked
+                    })}
+                  />
+                  <Label htmlFor="autoRevoke">Auto-revoke unpaid allocations</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="mixedGender"
+                    checked={settings.allowMixedGender}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      allowMixedGender: e.target.checked
+                    })}
+                  />
+                  <Label htmlFor="mixedGender">Allow mixed gender rooms</Label>
+                </div>
+                <Button onClick={handleUpdateSettings} className="w-full">
+                  Update Settings
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>          <Dialog open={isAddRoomsDialogOpen} onOpenChange={setIsAddRoomsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Bed className="w-4 h-4 mr-2" />
+                Add Rooms
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Rooms in Range</DialogTitle>
+                <DialogDescription>
+                  Add multiple rooms at once with sequential numbering
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="hostelSelect">Select Hostel</Label>
+                  <Select value={newRoomsForm.hostelId} onValueChange={(value) => setNewRoomsForm({ ...newRoomsForm, hostelId: value, floorId: '' })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select hostel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map((hostel) => (
+                        <SelectItem key={hostel.id} value={hostel.id}>
+                          {hostel.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="floorSelect">Select Floor</Label>
+                  <Select value={newRoomsForm.floorId} onValueChange={(value) => setNewRoomsForm({ ...newRoomsForm, floorId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select floor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {newRoomsForm.hostelId && hostels.find(h => h.id === newRoomsForm.hostelId)?.floors.map((floor) => (
+                        <SelectItem key={floor.id} value={floor.id}>
+                          {floor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startNumber">Start Number</Label>
+                    <Input
+                      id="startNumber"
+                      type="number"
+                      value={newRoomsForm.startNumber}
+                      onChange={(e) => setNewRoomsForm({ ...newRoomsForm, startNumber: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endNumber">End Number</Label>
+                    <Input
+                      id="endNumber"
+                      type="number"
+                      value={newRoomsForm.endNumber}
+                      onChange={(e) => setNewRoomsForm({ ...newRoomsForm, endNumber: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="prefix">Prefix (optional)</Label>
+                    <Input
+                      id="prefix"
+                      value={newRoomsForm.prefix}
+                      onChange={(e) => setNewRoomsForm({ ...newRoomsForm, prefix: e.target.value })}
+                      placeholder="e.g., A"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="suffix">Suffix (optional)</Label>
+                    <Input
+                      id="suffix"
+                      value={newRoomsForm.suffix}
+                      onChange={(e) => setNewRoomsForm({ ...newRoomsForm, suffix: e.target.value })}
+                      placeholder="e.g., B"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="roomCapacity">Room Capacity</Label>
+                  <Input
+                    id="roomCapacity"
+                    type="number"
+                    value={newRoomsForm.capacity}
+                    onChange={(e) => setNewRoomsForm({ ...newRoomsForm, capacity: Number(e.target.value) })}
+                    min="1"
+                    max={settings.maxRoomCapacity}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="roomGender">Gender</Label>
+                  <Select value={newRoomsForm.gender} onValueChange={(value: 'Male' | 'Female' | 'Mixed') => setNewRoomsForm({ ...newRoomsForm, gender: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mixed">Mixed</SelectItem>
+                      <SelectItem value="Male">Male Only</SelectItem>
+                      <SelectItem value="Female">Female Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="roomFeatures">Features (comma separated)</Label>
+                  <Input
+                    id="roomFeatures"
+                    value={newRoomsForm.features}
+                    onChange={(e) => setNewRoomsForm({ ...newRoomsForm, features: e.target.value })}
+                    placeholder="Private bathroom, Balcony"
+                  />
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  Preview: {newRoomsForm.prefix}{newRoomsForm.startNumber}{newRoomsForm.suffix} to {newRoomsForm.prefix}{newRoomsForm.endNumber}{newRoomsForm.suffix}
+                </div>
+                
+                <Button onClick={handleAddRoomsInRange} className="w-full">
+                  Add {newRoomsForm.endNumber - newRoomsForm.startNumber + 1} Rooms
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddFloorDialogOpen} onOpenChange={setIsAddFloorDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Building className="w-4 h-4 mr-2" />
+                Add Floor
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Floor</DialogTitle>
+                <DialogDescription>
+                  Add a new floor to an existing hostel
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="floorHostelSelect">Select Hostel</Label>
+                  <Select value={newFloorForm.hostelId} onValueChange={(value) => setNewFloorForm({ ...newFloorForm, hostelId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select hostel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map((hostel) => (
+                        <SelectItem key={hostel.id} value={hostel.id}>
+                          {hostel.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="floorNumber">Floor Number</Label>
+                  <Input
+                    id="floorNumber"
+                    value={newFloorForm.floorNumber}
+                    onChange={(e) => setNewFloorForm({ ...newFloorForm, floorNumber: e.target.value })}
+                    placeholder="e.g., 1, G, B1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="floorName">Floor Name</Label>
+                  <Input
+                    id="floorName"
+                    value={newFloorForm.floorName}
+                    onChange={(e) => setNewFloorForm({ ...newFloorForm, floorName: e.target.value })}
+                    placeholder="e.g., Ground Floor, First Floor"
+                  />
+                </div>
+                
+                <Button onClick={handleAddFloor} className="w-full">
+                  Add Floor
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Hostel
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Hostel</DialogTitle>
+                <DialogDescription>
+                  Add a new hostel to the system
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Hostel Name</Label>
+                  <Input
+                    id="name"
+                    value={newHostel.name}
+                    onChange={(e) => setNewHostel({ ...newHostel, name: e.target.value })}
+                    placeholder="Enter hostel name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newHostel.description}
+                    onChange={(e) => setNewHostel({ ...newHostel, description: e.target.value })}
+                    placeholder="Enter description"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="price">Price per Semester ($)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    value={newHostel.pricePerSemester}
+                    onChange={(e) => setNewHostel({ ...newHostel, pricePerSemester: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={newHostel.gender} onValueChange={(value: 'Male' | 'Female' | 'Mixed') => setNewHostel({ ...newHostel, gender: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mixed">Mixed</SelectItem>
+                      <SelectItem value="Male">Male Only</SelectItem>
+                      <SelectItem value="Female">Female Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="features">Features (comma separated)</Label>
+                  <Input
+                    id="features"
+                    value={newHostel.features}
+                    onChange={(e) => setNewHostel({ ...newHostel, features: e.target.value })}
+                    placeholder="WiFi, Security, Laundry"
+                  />
+                </div>
+                <Button onClick={handleCreateHostel} className="w-full">
+                  Create Hostel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-6">
+        {/* Hostels Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {hostels.map((hostel) => (
+          <Card key={hostel.id} className={hostel.isActive ? '' : 'opacity-60'}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{hostel.name}</CardTitle>
+                <Badge variant={hostel.isActive ? 'default' : 'secondary'}>
+                  {hostel.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+              <CardDescription>{hostel.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-gray-500" />
+                    <span>Capacity: {hostel.totalCapacity}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span>Occupied: {hostel.currentOccupancy}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-gray-500" />
+                    <span>${hostel.pricePerSemester}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <span>{hostel.floors.length} floors</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {hostel.features.map((feature, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedHostel(hostel)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View Rooms
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleToggleHostelStatus(hostel)}
+                  >
+                    {hostel.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteHostel(hostel.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Room Management Modal */}
+      {selectedHostel && (
+        <Dialog open={!!selectedHostel} onOpenChange={() => setSelectedHostel(null)}>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>{selectedHostel.name} - Room Management</DialogTitle>
+                  <DialogDescription>
+                    Manage individual rooms, capacity, and reservations
+                  </DialogDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setNewRoomsForm({ ...newRoomsForm, hostelId: selectedHostel.id });
+                      setIsAddRoomsDialogOpen(true);
+                    }}
+                  >
+                    <Bed className="w-4 h-4 mr-1" />
+                    Add Rooms
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setNewFloorForm({ ...newFloorForm, hostelId: selectedHostel.id });
+                      setIsAddFloorDialogOpen(true);
+                    }}
+                  >
+                    <Building className="w-4 h-4 mr-1" />
+                    Add Floor
+                  </Button>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {selectedHostel.floors.map((floor) => (
+                <div key={floor.id} className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">{floor.name}</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {floor.rooms.map((room) => (
+                      <Card key={room.id} className={getRoomStatusColor(room)}>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold">Room {room.number}</h4>
+                              {getRoomStatusIcon(room)}
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center justify-between">
+                                <span>Capacity:</span>
+                                <Input
+                                  type="number"
+                                  value={room.capacity}
+                                  onChange={(e) => handleUpdateRoomCapacity(selectedHostel, room.id, e.target.value)}
+                                  className="w-16 h-6 text-xs"
+                                  min="1"
+                                  max={settings.maxRoomCapacity}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span>Occupants:</span>
+                                <span>{room.occupants.length}</span>
+                              </div>
+                              {room.isReserved && (
+                                <div className="text-yellow-600">
+                                  <p>Reserved by: {room.reservedBy}</p>
+                                  <p>Until: {room.reservedUntil ? new Date(room.reservedUntil).toLocaleDateString() : 'N/A'}</p>
+                                </div>
+                              )}
+                            </div>
+                              <div className="flex gap-1">
+                              {room.isReserved ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleUnreserveRoom(room.id, selectedHostel.id)}
+                                  className="flex-1"
+                                >
+                                  <Unlock className="w-3 h-3 mr-1" />
+                                  Unreserve
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleReserveRoom(room.id, selectedHostel.id)}
+                                  className="flex-1"
+                                >
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Reserve
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveRoom(selectedHostel.id, room.id, room.number)}
+                                className="px-2"
+                                disabled={room.occupants.length > 0}
+                                title={room.occupants.length > 0 ? "Cannot remove occupied room" : "Remove room"}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            
+                            {room.occupants.length > 0 && (
+                              <div className="pt-2 border-t">
+                                <p className="text-xs font-medium mb-1">Occupants:</p>
+                                <div className="space-y-1">
+                                  {room.occupants.map((regNumber, index) => (
+                                    <div key={index} className="text-xs flex items-center justify-between">
+                                      <span>{regNumber}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DialogContent>        </Dialog>
+      )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminHostelManagement;

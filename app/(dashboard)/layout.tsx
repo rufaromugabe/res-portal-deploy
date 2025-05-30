@@ -65,24 +65,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (loading || !isAuthorized) {
     return <LoadingSpinner />;
   }
-
   return (
     <SidebarProvider>
       {/* Show AppDrawer only on small screens (e.g., screens < 768px) */}
-      <div className="block sm:hidden">
-        {/* You can add your mobile drawer component here */}
-      </div>
-
-      {/* Show AppSidebar only on medium and larger screens (e.g., screens >= 768px) */}
-      <div className="hidden sm:block">
+      <div className="block sm:hidden fixed inset-0 z-50">
+        <AppDrawer>{children}</AppDrawer>
+      </div>      {/* Show AppSidebar only on medium and larger screens (e.g., screens >= 768px) */}
+      <div className="hidden sm:flex h-screen w-screen">
         <AppSidebar />
+        <main className="flex-1 h-full overflow-auto">
+          <div className="w-full h-full bg-white">
+            {children}
+          </div>
+        </main>
       </div>
-
-      <main className="w-full h-screen">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg mt-2">
-          <AppDrawer>{children}</AppDrawer>
-        </div>
-      </main>
     </SidebarProvider>
   );
 }
