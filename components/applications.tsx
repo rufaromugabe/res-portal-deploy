@@ -14,7 +14,7 @@ import { toast } from "react-toastify"
 
 const SkeletonLoader = ({ rows = 10, cols = 10 }) => {
   return (
-    <div className="animate-pulse  max-w-6xl mx-auto ">
+    <div className="animate-pulse  max-w-5xl mx-auto ">
       {[...Array(rows)].map((_, rowIndex) => (
         <div key={rowIndex} className="grid grid-cols-10 gap-4 mb-4 items-center p-2">
           {[...Array(cols)].map((_, colIndex) => (
@@ -149,7 +149,7 @@ toast.success(`Application status changed successfully.`)
   }, [applications, selectedPart, selectedGender, selectedStatus, selectedProgramme, searchQuery]);
   
   return (
-    <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-sm">
+    <div className="max-w-5xl mx-auto bg-white p-8 rounded-lg shadow-sm">
       <h2 className="text-3xl font-bold mb-6 text-center">On-campus Accommodation Applications</h2>
 
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
@@ -186,7 +186,7 @@ toast.success(`Application status changed successfully.`)
       </div>
 
       {/* Search and Filters */}
-      <div className="max-w-6xl mx-auto mb-6 space-y-4">
+      <div className="max-w-5xl mx-auto mb-6 space-y-4">
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -272,7 +272,7 @@ toast.success(`Application status changed successfully.`)
       {loading ? (
         <SkeletonLoader rows={5} cols={10} />
       ) : (
-        <Table className="max-w-6xl mx-auto rounded-t-md">
+        <Table className="max-w-5xl mx-auto rounded-t-md">
           <TableHeader className="bg-gray-100">
             <TableRow>
               <TableHead>Date</TableHead>

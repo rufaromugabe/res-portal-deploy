@@ -92,7 +92,7 @@ const Settings = () => {
 
   return (
     <div className="h-screen flex items-start justify-center">
-      <Card className="w-full max-w-5xl mx-auto">
+      <Card className="w-full max-w-5xl mt-10 mx-auto">
         <CardHeader className="flex flex-col items-center justify-center">
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-center">
             <SettingsIcon className="w-6 h-6" />

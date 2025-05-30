@@ -92,7 +92,7 @@ const Logs = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto h-full bg-gray-50 p-8 rounded-lg shadow-md">
+    <div className="max-w-5xl mx-auto h-full bg-gray-50 p-8 rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Activity Logs</h2>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">

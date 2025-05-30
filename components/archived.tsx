@@ -99,11 +99,11 @@ const Archived = () => {
   // handlePublish function if applicable
 
   return (
-    <div className=" overflow-auto">
-      <h2 className="text-3xl font-bold mb-6 text-center">Archived Applications</h2>
+    <div className=" overflow-auto ">
+      <h2 className="text-3xl mt-10 font-bold mb-6 text-center">Archived Applications</h2>
 
       {/* Search and Export */}
-      <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="max-w-5xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <Input
           placeholder="Search by name or registration number..."
           value={searchQuery}
@@ -117,7 +117,7 @@ const Archived = () => {
       </div>
 
       {/* Table */}
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <Table>
           <TableHeader>
             <TableRow>

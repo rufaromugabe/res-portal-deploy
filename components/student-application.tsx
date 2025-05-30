@@ -213,7 +213,7 @@ const StudentApplicationForm: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm animate-pulse">
+        <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm animate-pulse">
           <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto mb-4"></div>
           <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto mb-8"></div>
           <div className="space-y-4">
@@ -229,7 +229,7 @@ const StudentApplicationForm: React.FC = () => {
   if (application) {
     return (
       <div className="flex items-center justify-center h-full overflow-auto">
-        <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+        <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
           <h2 className="text-3xl font-bold mb-6 text-center">
             Your Application
           </h2>
@@ -294,7 +294,7 @@ const StudentApplicationForm: React.FC = () => {
   }
   return (
     <div className="flex items-center justify-center h-full overflow-auto">
-      <div className="max-w-6xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+      <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
         <h2 className="text-3xl font-bold mb-6 text-center">
           On-campus Res Application
         </h2>

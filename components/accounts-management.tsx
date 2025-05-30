@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
-import { getAuth } from "@firebase/auth";
+
 
 const PAGE_SIZE = 10;
 
@@ -25,31 +25,81 @@ const AdminAccountManagement = () => {
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
   const observerRef = useRef(null);
-
-  const fetchUsers = useCallback(async (paginate = false) => {
-    if (!hasMore && paginate) return;
+  
+  // Use refs to avoid stale closures in callbacks
+  const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const hasMoreRef = useRef(true);
+  const loadingRef = useRef(false);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    lastDocRef.current = lastDoc;
+  }, [lastDoc]);
+  
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);  const fetchUsers = useCallback(async (paginate = false) => {
+    if (!hasMoreRef.current && paginate) return;
+    if (loadingRef.current) return; // Prevent multiple simultaneous requests
+    
+    setLoading(true);
     try {
-      let usersQuery = query(
-        collection(db, "users"),
-        orderBy("createdAt", "desc"),
-        lastDoc ? startAfter(lastDoc) : limit(PAGE_SIZE)
-      );
+      let usersQuery;
+      if (lastDocRef.current && paginate) {
+        usersQuery = query(
+          collection(db, "users"),
+          orderBy("createdAt", "desc"),
+          startAfter(lastDocRef.current),
+          limit(PAGE_SIZE)
+        );
+      } else {
+        usersQuery = query(
+          collection(db, "users"),
+          orderBy("createdAt", "desc"),
+          limit(PAGE_SIZE)
+        );
+      }
 
       const snapshot = await getDocs(usersQuery);
       const userList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as UserData));
+        // Check for duplicates before adding
+      setUsers((prev) => {
+        if (paginate) {
+          const existingIds = new Set(prev.map(user => user.id));
+          const newUsers = userList.filter(user => !existingIds.has(user.id));
+          console.log(`Adding ${newUsers.length} new users, ${userList.length - newUsers.length} duplicates filtered`);
+          return [...prev, ...newUsers];
+        } else {
+          console.log(`Setting ${userList.length} users (initial load)`);
+          return userList;
+        }
+      });
       
-      setUsers((prev) => (paginate ? [...prev, ...userList] : userList));
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+      const newLastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+      setLastDoc(newLastDoc);
       setHasMore(snapshot.docs.length === PAGE_SIZE);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Failed to fetch users.");
+    } finally {
+      setLoading(false);
     }
-  }, [lastDoc, hasMore]);
-
+  }, []);
   useEffect(() => {
     fetchUsers();
+  }, []);
+  const resetPagination = useCallback(() => {
+    setUsers([]);
+    setLastDoc(null);
+    setHasMore(true);
+    lastDocRef.current = null;
+    hasMoreRef.current = true;
   }, []);
 
   const handleRoleChange = async (userId: string, newStatus: "user" | "admin") => {
@@ -62,17 +112,21 @@ const AdminAccountManagement = () => {
       console.error("Error updating role:", error);
       toast.error("Failed to update user role.");
     }
+  };  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value.toLowerCase();
+    setSearchQuery(newQuery);
+    
+    // Reset pagination when search is cleared
+    if (newQuery === "" && searchQuery !== "") {
+      resetPagination();
+      fetchUsers();
+    }
   };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value.toLowerCase());
-  };
-
   const handleObserver = useCallback((entries: { isIntersecting: any; }[]) => {
-    if (entries[0].isIntersecting) {
+    if (entries[0].isIntersecting && !searchQuery) {
       fetchUsers(true);
     }
-  }, [fetchUsers]);
+  }, [fetchUsers, searchQuery]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, { threshold: 1 });
@@ -86,7 +140,7 @@ const AdminAccountManagement = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto h-full p-4">
+    <div className="max-w-5xl mx-auto h-full  mt-10 p-4">
       <h1 className="text-3xl font-bold mb-6 text-center">User Account Management</h1>
       <div className="relative mb-6">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -119,10 +173,9 @@ const AdminAccountManagement = () => {
                 </Select>
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
+          ))}        </TableBody>
       </Table>
-      <div ref={observerRef} className="h-10"></div>
+      {!searchQuery && <div ref={observerRef} className="h-10"></div>}
     </div>
   );
 };

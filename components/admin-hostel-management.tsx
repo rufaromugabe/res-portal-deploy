@@ -901,7 +901,7 @@ const AdminHostelManagement: React.FC = () => {
       {/* Room Management Modal */}
       {selectedHostel && (
         <Dialog open={!!selectedHostel} onOpenChange={() => setSelectedHostel(null)}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>

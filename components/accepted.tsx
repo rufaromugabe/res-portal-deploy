@@ -20,7 +20,7 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale,
 
 
 const Skeleton = ({ rows = 5 }) => (
-  <div className="w-full max-w-6xl mx-auto p-4">
+  <div className="w-full max-w-5xl mx-auto p-4">
     {[...Array(rows)].map((_, index) => (
       <div key={index} className="animate-pulse flex space-x-4 mb-4">
         <div className="h-6 bg-gray-200 rounded w-1/4"></div>
@@ -34,11 +34,11 @@ const Skeleton = ({ rows = 5 }) => (
 
 const StatisticsSkeleton = () => (
   <>
-    <div className="max-w-6xl mx-auto mb-4 pt-10">
+    <div className="max-w-5xl mx-auto mb-4 pt-10">
     <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse mx-auto pt-10"></div>
      
     </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
       {[...Array(3)].map((_, index) => (
         <div key={index} className="bg-white p-4 rounded-lg shadow-sm animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
@@ -257,7 +257,7 @@ const partData = {
       <h2 className="text-3xl font-bold mb-6 text-center">Accepted Applications</h2>
 
       {/* Statistics */}
-      <div className="max-w-6xl mx-auto mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
+      <div className="max-w-5xl mx-auto mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm">
         <h3 className="text-2xl font-semibold mb-4 text-center text-gray-800">Application Statistics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -302,7 +302,7 @@ const partData = {
       </div>
 
       {/* Search, Print, and Publish */}
-      <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="max-w-5xl mx-auto mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <Input
           placeholder="Search by name or registration number..."
           value={searchQuery}
@@ -332,7 +332,7 @@ const partData = {
       </Dialog>
 
       {/* Table */}
-      <Table className="max-w-6xl mx-auto border-separate border-spacing-y-2">
+      <Table className="max-w-5xl mx-auto border-separate border-spacing-y-2">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>

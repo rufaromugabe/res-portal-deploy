@@ -71,11 +71,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="block sm:hidden fixed inset-0 z-50">
         <AppDrawer>{children}</AppDrawer>
       </div>      {/* Show AppSidebar only on medium and larger screens (e.g., screens >= 768px) */}
-      <div className="hidden sm:flex h-screen w-screen">
-        <AppSidebar />
-        <main className="flex-1 h-full overflow-auto">
-          <div className="w-full h-full bg-white">
-            {children}
+      <div className="hidden sm:flex h-screen w-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6 overflow-hidden">
+        <div className="flex-shrink-0">
+          <AppSidebar />
+        </div>
+        <main className="flex-1 h-full flex flex-col min-h-0">
+          <div className="flex-1 bg-white rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden min-h-0 m-2 ml-0 backdrop-blur-sm">
+            <div className="h-full overflow-y-auto p-2">
+              {children}
+            </div>;
           </div>
         </main>
       </div>
