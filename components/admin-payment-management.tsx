@@ -30,7 +30,7 @@ import {
   addAdminPayment,
   deletePayment
 } from '@/data/payment-data';
-import { fetchStudentAllocations } from '@/data/hostel-data';
+import { fetchStudentAllocations, getRoomDetailsFromAllocation } from '@/data/hostel-data';
 import { Payment, RoomAllocation } from '@/types/hostel';
 
 const AdminPaymentManagement: React.FC = () => {
@@ -45,8 +45,7 @@ const AdminPaymentManagement: React.FC = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  
-  // Form states
+    // Form states
   const [rejectionReason, setRejectionReason] = useState('');
   const [addPaymentForm, setAddPaymentForm] = useState({
     studentRegNumber: '',
@@ -55,7 +54,9 @@ const AdminPaymentManagement: React.FC = () => {
     amount: '',
     paymentMethod: 'Bank Transfer' as Payment['paymentMethod'],
     notes: ''
-  });
+  });  const [isLoadingAmount, setIsLoadingAmount] = useState(false);
+  const [allowAmountEdit, setAllowAmountEdit] = useState(false);
+  const [roomInfo, setRoomInfo] = useState<{hostelName: string, roomNumber: string, floorName: string} | null>(null);
 
   const auth = getAuth();
   const adminEmail = auth.currentUser?.email || '';
@@ -63,7 +64,6 @@ const AdminPaymentManagement: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -78,6 +78,48 @@ const AdminPaymentManagement: React.FC = () => {
       toast.error('Failed to load payment data');
     } finally {
       setLoading(false);
+    }
+  };
+  const fetchPaymentAmount = async (studentRegNumber: string) => {
+    if (!studentRegNumber.trim()) {
+      setAddPaymentForm(prev => ({ ...prev, amount: '' }));
+      setRoomInfo(null);
+      return;
+    }
+
+    try {
+      setIsLoadingAmount(true);
+      const allocations = await fetchStudentAllocations(studentRegNumber);
+      const unpaidAllocation = allocations.find(a => a.paymentStatus !== 'Paid');
+      
+      if (unpaidAllocation) {
+        const roomDetails = await getRoomDetailsFromAllocation(unpaidAllocation);
+        if (roomDetails) {
+          setAddPaymentForm(prev => ({ 
+            ...prev, 
+            amount: roomDetails.price.toString(),
+            allocationId: unpaidAllocation.id 
+          }));
+          setRoomInfo({
+            hostelName: roomDetails.hostel.name,
+            roomNumber: roomDetails.room.number,
+            floorName: roomDetails.room.floorName
+          });
+        } else {
+          setRoomInfo(null);
+          toast.error('Could not fetch room details for this allocation');
+        }
+      } else {
+        setAddPaymentForm(prev => ({ ...prev, amount: '' }));
+        setRoomInfo(null);
+        toast.error('No unpaid allocation found for this student');
+      }
+    } catch (error) {
+      console.error('Error fetching payment amount:', error);
+      setRoomInfo(null);
+      toast.error('Failed to fetch payment amount');
+    } finally {
+      setIsLoadingAmount(false);
     }
   };
 
@@ -112,26 +154,21 @@ const AdminPaymentManagement: React.FC = () => {
       toast.error('Failed to reject payment');
     }
   };
-
   const handleAddPayment = async () => {
     if (!addPaymentForm.studentRegNumber || !addPaymentForm.receiptNumber || !addPaymentForm.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    try {
-      // First fetch student allocations to find the right allocation
-      const allocations = await fetchStudentAllocations(addPaymentForm.studentRegNumber);
-      const unpaidAllocation = allocations.find(a => a.paymentStatus !== 'Paid');
-      
-      if (!unpaidAllocation) {
-        toast.error('No unpaid allocation found for this student');
-        return;
-      }
+    if (!addPaymentForm.allocationId) {
+      toast.error('No allocation found for this student. Please verify the registration number.');
+      return;
+    }
 
+    try {
       await addAdminPayment({
         studentRegNumber: addPaymentForm.studentRegNumber,
-        allocationId: unpaidAllocation.id,
+        allocationId: addPaymentForm.allocationId,
         receiptNumber: addPaymentForm.receiptNumber,
         amount: parseFloat(addPaymentForm.amount),
         paymentMethod: addPaymentForm.paymentMethod,
@@ -145,9 +182,7 @@ const AdminPaymentManagement: React.FC = () => {
     } catch (error) {
       toast.error('Failed to add payment');
     }
-  };
-
-  const resetAddPaymentForm = () => {
+  };  const resetAddPaymentForm = () => {
     setAddPaymentForm({
       studentRegNumber: '',
       allocationId: '',
@@ -156,6 +191,9 @@ const AdminPaymentManagement: React.FC = () => {
       paymentMethod: 'Bank Transfer',
       notes: ''
     });
+    setAllowAmountEdit(false);
+    setIsLoadingAmount(false);
+    setRoomInfo(null);
   };
 
   const openApproveDialog = (payment: Payment) => {
@@ -518,16 +556,38 @@ const AdminPaymentManagement: React.FC = () => {
               Add a payment on behalf of a student
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-4">            <div>
               <Label htmlFor="studentRegNumber">Student Registration Number *</Label>
               <Input
                 id="studentRegNumber"
                 value={addPaymentForm.studentRegNumber}
-                onChange={(e) => setAddPaymentForm({...addPaymentForm, studentRegNumber: e.target.value})}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAddPaymentForm({...addPaymentForm, studentRegNumber: value});
+                  // Auto-fetch payment amount when student reg number changes
+                  if (value.length > 3) { // Only fetch after some reasonable input
+                    fetchPaymentAmount(value);
+                  }
+                }}
+                onBlur={() => {
+                  if (addPaymentForm.studentRegNumber) {
+                    fetchPaymentAmount(addPaymentForm.studentRegNumber);
+                  }
+                }}
                 placeholder="Enter student reg number"
               />
             </div>
+            
+            {roomInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <h4 className="font-medium text-blue-800 mb-2">Room Allocation Details</h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p><strong>Hostel:</strong> {roomInfo.hostelName}</p>
+                  <p><strong>Room:</strong> {roomInfo.roomNumber} ({roomInfo.floorName})</p>
+                  <p><strong>Amount:</strong> ${addPaymentForm.amount}</p>
+                </div>
+              </div>
+            )}
             <div>
               <Label htmlFor="receiptNumber">Receipt Number *</Label>
               <Input
@@ -536,16 +596,45 @@ const AdminPaymentManagement: React.FC = () => {
                 onChange={(e) => setAddPaymentForm({...addPaymentForm, receiptNumber: e.target.value})}
                 placeholder="Enter receipt number"
               />
-            </div>
-            <div>
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                value={addPaymentForm.amount}
-                onChange={(e) => setAddPaymentForm({...addPaymentForm, amount: e.target.value})}
-                placeholder="Enter payment amount"
-              />
+            </div>            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="amount">Amount (Auto-calculated) *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAllowAmountEdit(!allowAmountEdit)}
+                  className="text-xs"
+                >
+                  {allowAmountEdit ? 'Lock Amount' : 'Edit Amount'}
+                </Button>
+              </div>
+              <div className="relative">
+                <Input
+                  id="amount"
+                  type="number"
+                  value={addPaymentForm.amount}
+                  onChange={(e) => {
+                    if (allowAmountEdit) {
+                      setAddPaymentForm({...addPaymentForm, amount: e.target.value});
+                    }
+                  }}
+                  readOnly={!allowAmountEdit}
+                  className={!allowAmountEdit ? "bg-gray-50" : ""}
+                  placeholder={isLoadingAmount ? "Calculating..." : "Amount will be auto-calculated"}
+                />
+                {isLoadingAmount && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                {allowAmountEdit 
+                  ? "Manual amount editing is enabled. Use with caution."
+                  : "Amount is automatically calculated based on the student's room allocation"
+                }
+              </p>
             </div>
             <div>
               <Label htmlFor="paymentMethod">Payment Method</Label>
