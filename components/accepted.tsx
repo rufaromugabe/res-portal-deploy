@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Users, PieChart, Printer, Upload, DollarSign, Check } from 'lucide-react';
+import { BarChart2, Users, PieChart, Printer, Upload, Home, MapPin } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { getAuth } from "firebase/auth";
 import { fetchAllApplications } from "@/data/firebase-data";
+import { fetchStudentAllocations, getRoomDetailsFromAllocation } from "@/data/hostel-data";
 import { setDoc, collection, getFirestore, doc, getDocs, deleteDoc } from "firebase/firestore";
 import { Pie, Bar } from "react-chartjs-2";
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement } from "chart.js";
 import { toast } from "react-toastify";
 import { generateExcelFile } from "@/utils/generate_xl"; // Ensure correct import path
-import PaymentStatusModal from "./payment-modal"; // Import the modal component
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 
 // Register ChartJS components
@@ -56,15 +56,17 @@ const Accepted = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [publishing, setPublishing] = useState<boolean>(false);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [hostelDetails, setHostelDetails] = useState<{[key: string]: {hostelName: string, roomNumber: string, floor: string}}>({});
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
         const apps = await fetchAllApplications();
         setApplications(apps);
+        
+        // Load hostel details for accepted applications
+        await loadHostelDetails(apps.filter(app => app.status === "Accepted"));
       } catch (error) {
         console.error("Error fetching applications:", error);
       } finally {
@@ -74,6 +76,42 @@ const Accepted = () => {
 
     fetchApplications();
   }, []);
+
+  const loadHostelDetails = async (acceptedApps: any[]) => {
+    try {
+      const details: {[key: string]: {hostelName: string, roomNumber: string, floor: string}} = {};
+      
+      for (const app of acceptedApps) {
+        try {
+          const allocations = await fetchStudentAllocations(app.regNumber);
+          if (allocations.length > 0) {
+            const allocation = allocations[0]; // Get the most recent allocation
+            const roomDetails = await getRoomDetailsFromAllocation(allocation);
+            
+            if (roomDetails) {
+              details[app.regNumber] = {
+                hostelName: roomDetails.hostel.name,
+                roomNumber: roomDetails.room.number,
+                floor: roomDetails.room.floor
+              };
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading hostel details for ${app.regNumber}:`, error);
+          // Set default values if allocation not found
+          details[app.regNumber] = {
+            hostelName: "Not Allocated",
+            roomNumber: "-",
+            floor: "-"
+          };
+        }
+      }
+      
+      setHostelDetails(details);
+    } catch (error) {
+      console.error("Error loading hostel details:", error);
+    }
+  };
 
   const acceptedApplications = useMemo(() => {
     return applications.filter(
@@ -153,50 +191,41 @@ const Accepted = () => {
       });
   
     window.print();
-  };
-
-  const handleExportExcel = () => {
-    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme', 'Payment', 'Reference'];
-    const data = acceptedApplications.map(app => ({
-      name: app.name,
-      email: app.email,
-      registration_number: app.regNumber,
-      gender: app.gender,
-      programme: app.programme,
-      payment: app.paymentStatus,
-      reference: app.reference,
-    }));
+  };  const handleExportExcel = () => {
+    const headers = ['Name', 'Email', 'Registration Number', 'Gender', 'Programme', 'Hostel', 'Room Number', 'Floor'];
+    const data = acceptedApplications.map(app => {
+      const hostelInfo = hostelDetails[app.regNumber] || { hostelName: 'Not Allocated', roomNumber: '-', floor: '-' };
+      return {
+        name: app.name,
+        email: app.email,
+        registration_number: app.regNumber,
+        gender: app.gender,
+        programme: app.programme,
+        hostel: hostelInfo.hostelName,
+        room_number: hostelInfo.roomNumber,
+        floor: hostelInfo.floor,
+      };
+    });
   
     generateExcelFile({
       headers,
       data,
-      fileName: 'Accepted_Applications.xlsx',
+      fileName: 'Accepted_Applications_With_Hostel_Details.xlsx',
     });
   
     toast.success('Excel file generated successfully!');
   };
 
   const handleOpenModal = (student: any) => {
-  
-    setSelectedStudent(student);
-    setIsModalOpen(true);
+    // This function is no longer needed but kept for compatibility
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedStudent(null);
-  };  const handlePaymentStatusUpdate = (updatedStudent: any) => {
-    setApplications((prevApplications) =>
-      prevApplications.map((app) =>
-        app.regNumber === updatedStudent.regNumber
-          ? { 
-              ...app, 
-              paymentStatus: updatedStudent.paymentStatus,
-              reference: updatedStudent.reference 
-            }
-          : app
-      )
-    );
+    // This function is no longer needed but kept for compatibility
+  };
+
+  const handlePaymentStatusUpdate = (updatedStudent: any) => {
+    // This function is no longer needed but kept for compatibility
   };
   
 
@@ -332,9 +361,7 @@ const partData = {
           <Button onClick={() => setConfirmDialogOpen(false)} className="bg-gray-400">Cancel</Button>
           <Button onClick={handlePublish} className="bg-green-600 hover:bg-green-700">Confirm</Button>
         </DialogActions>
-      </Dialog>
-
-      {/* Table */}
+      </Dialog>      {/* Table */}
       <Table className="max-w-5xl mx-auto border-separate border-spacing-y-2">
         <TableHeader>
           <TableRow>
@@ -342,55 +369,46 @@ const partData = {
             <TableHead>Reg Number</TableHead>
             <TableHead>Gender</TableHead>
             <TableHead>Part</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Hostel</TableHead>
+            <TableHead>Room</TableHead>
+            <TableHead>Floor</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {acceptedApplications.map((app) => (
-            <TableRow key={app.regNumber} className="hover:bg-gray-50">
-              <TableCell>{app.name}</TableCell>
-              <TableCell>{app.regNumber}</TableCell>
-              <TableCell>{app.gender}</TableCell>
-              <TableCell>{app.part}</TableCell>
-              <TableCell>              <Button
-      onClick={() => handleOpenModal(app)}
-      variant="outline"
-      className={`mr-2 ${
-        app.paymentStatus === "Paid"
-          ? "bg-green-500 text-white hover:bg-green-600"
-          : app.paymentStatus === "Pending"
-          ? "bg-yellow-500 text-white hover:bg-yellow-600"
-          : app.paymentStatus === "Overdue"
-          ? "bg-red-500 text-white hover:bg-red-600"
-          : "bg-gray-500 text-white hover:bg-gray-600"
-      }`}
-      
-    >
-      {app.paymentStatus === "Paid" ? (
-        <span className="flex items-center">
-          <Check className="mr-2 h-4 w-4" />
-          Paid
-        </span>
-      ) : (
-        <span className="flex items-center">
-          <DollarSign className="mr-2 h-4 w-4" />
-          {app.paymentStatus || "Not Paid"}
-        </span>
-      )}
-    </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {acceptedApplications.map((app) => {
+            const hostelInfo = hostelDetails[app.regNumber] || { hostelName: 'Not Allocated', roomNumber: '-', floor: '-' };
+            return (
+              <TableRow key={app.regNumber} className="hover:bg-gray-50">
+                <TableCell>{app.name}</TableCell>
+                <TableCell>{app.regNumber}</TableCell>
+                <TableCell>{app.gender}</TableCell>
+                <TableCell>{app.part}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-blue-600" />
+                    <span className={hostelInfo.hostelName === 'Not Allocated' ? 'text-red-500' : 'text-gray-900'}>
+                      {hostelInfo.hostelName}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className={hostelInfo.roomNumber === '-' ? 'text-red-500' : 'text-gray-900'}>
+                    {hostelInfo.roomNumber}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-green-600" />
+                    <span className={hostelInfo.floor === '-' ? 'text-red-500' : 'text-gray-900'}>
+                      {hostelInfo.floor}
+                    </span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
-
-      {/* Payment Status Modal */}
-      <PaymentStatusModal
-  isOpen={isModalOpen}
-  onClose={handleCloseModal}
-  student={selectedStudent}
-  onUpdate={handlePaymentStatusUpdate} // Pass the update function
-/>
 
     </div>
   );
