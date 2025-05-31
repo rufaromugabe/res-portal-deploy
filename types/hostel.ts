@@ -39,6 +39,22 @@ export interface Floor {
   rooms: Room[];
 }
 
+export interface Payment {
+  id: string;
+  studentRegNumber: string;
+  allocationId: string;
+  receiptNumber: string;
+  amount: number;
+  paymentMethod: 'Bank Transfer' | 'Mobile Money' | 'Cash' | 'Card' | 'Other';
+  submittedAt: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  attachments?: string[]; // URLs to uploaded receipt images
+  notes?: string;
+}
+
 export interface RoomAllocation {
   id: string;
   studentRegNumber: string;
@@ -49,6 +65,7 @@ export interface RoomAllocation {
   paymentDeadline: string;
   semester: string;
   academicYear: string;
+  paymentId?: string; // Reference to approved payment
 }
 
 export interface HostelSettings {

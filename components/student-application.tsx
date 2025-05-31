@@ -17,8 +17,8 @@ import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } fro
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
 import { StudentProfile } from "./student-profile";
-import { fetchHostels, fetchStudentAllocations } from "@/data/hostel-data";
-import { Hostel } from "@/types/hostel";
+import { fetchHostels, fetchStudentAllocations, getRoomDetailsFromAllocation } from "@/data/hostel-data";
+import { Hostel, RoomAllocation } from "@/types/hostel";
 
 // Define Zod schema for validation
 const StudentApplicationSchema = z.object({
@@ -44,7 +44,8 @@ const StudentApplicationForm: React.FC = () => {
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [hostels, setHostels] = useState<Hostel[]>([]);
-  const [roomAllocation, setRoomAllocation] = useState<any>(null);
+  const [roomAllocation, setRoomAllocation] = useState<RoomAllocation | null>(null);
+  const [roomDetails, setRoomDetails] = useState<{roomNumber: string, hostelName: string, floorName: string, price: number} | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentApplicationSchema),
@@ -76,13 +77,22 @@ const StudentApplicationForm: React.FC = () => {
             setApplication(applicationSnap.data() as ApplicationData);
           }          // Fetch hostels
           const hostelData = await fetchHostels();
-          setHostels(hostelData);
-
-          // Check for room allocation
+          setHostels(hostelData);          // Check for room allocation
           if (profileSnap.exists()) {
             const allocations = await fetchStudentAllocations(regNumber);
             if (allocations.length > 0) {
-              setRoomAllocation(allocations[0]);
+              const allocation = allocations[0];
+              setRoomAllocation(allocation);
+                // Fetch room details
+              const details = await getRoomDetailsFromAllocation(allocation);
+              if (details) {
+                setRoomDetails({
+                  roomNumber: details.room.number,
+                  hostelName: details.hostel.name,
+                  floorName: details.room.floorName,
+                  price: details.price
+                });
+              }
             }
           }
         } catch (error) {
@@ -258,13 +268,14 @@ const StudentApplicationForm: React.FC = () => {
             }`}>
               {application.status}
             </span>
-          </p>
-          {roomAllocation && (
+          </p>          {roomAllocation && roomDetails && (
             <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
               <p className="font-semibold text-blue-800">Room Allocation:</p>
-              <p><strong>Hostel:</strong> {roomAllocation.hostelName}</p>
-              <p><strong>Room:</strong> {roomAllocation.roomNumber}</p>
-              <p><strong>Floor:</strong> {roomAllocation.floor}</p>
+              <p><strong>Hostel:</strong> {roomDetails.hostelName}</p>
+              <p><strong>Room:</strong> {roomDetails.roomNumber}</p>
+              <p><strong>Floor:</strong> {roomDetails.floorName}</p>
+              <p><strong>Price:</strong> ${roomDetails.price}/semester</p>
+              <p><strong>Payment Status:</strong> {roomAllocation.paymentStatus}</p>
               <p><strong>Allocated At:</strong> {new Date(roomAllocation.allocatedAt).toLocaleString()}</p>
             </div>
           )}

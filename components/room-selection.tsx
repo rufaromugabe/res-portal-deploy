@@ -28,6 +28,7 @@ import { StudentProfile } from './student-profile';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import StudentPaymentManagement from './student-payment-management';
 
 interface RoomSelectionProps {
   onRoomSelected: (roomId: string, hostelId: string) => void;
@@ -243,9 +244,8 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                 <p className="text-sm font-medium text-gray-600">Allocated Date</p>
                 <p className="text-sm">{new Date(existingAllocation.allocatedAt).toLocaleDateString()}</p>
               </div>
-            </div>
-            {existingAllocation.paymentStatus !== 'Paid' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            </div>            {existingAllocation.paymentStatus !== 'Paid' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-yellow-600" />
                   <p className="text-sm font-medium text-yellow-800">Payment Required</p>
@@ -255,6 +255,12 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                 </p>
               </div>
             )}
+            
+            {/* Payment Management Section */}
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-4">Payment Management</h4>
+              <StudentPaymentManagement />
+            </div>
           </div>
         </CardContent>
       </Card>

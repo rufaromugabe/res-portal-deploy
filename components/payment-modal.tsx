@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import { setDoc, doc, getFirestore } from "firebase/firestore";
 import { toast } from "react-toastify";
 import {
@@ -10,32 +12,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fetchStudentAllocations } from "@/data/hostel-data";
+import { addAdminPayment } from "@/data/payment-data";
+import { getAuth } from "firebase/auth";
+import { Payment } from "@/types/hostel";
 
 interface PaymentStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
   student: any;
-  onUpdate: (updatedStudent: any) => void; // Add this
+  onUpdate: (updatedStudent: any) => void;
 }
 
 const PAYMENT_STATUSES = [
   "Not Paid",
-  "Fully Paid",
-  
+  "Pending",
+  "Paid",
+  "Overdue"
 ];
 
 const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatusModalProps) => {
   const [paymentStatus, setPaymentStatus] = useState("Not Paid");
   const [reference, setReference] = useState("");
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  
+  // Payment form state
+  const [paymentForm, setPaymentForm] = useState({
+    receiptNumber: '',
+    amount: '',
+    paymentMethod: 'Bank Transfer' as Payment['paymentMethod'],
+    notes: ''
+  });
+
+  const auth = getAuth();
 
   // Update state when the modal opens with new student data
   useEffect(() => {
     if (isOpen && student) {
       setPaymentStatus(student.paymentStatus || "Not Paid");
       setReference(student.reference || "");
+      setShowAddPayment(false);
+      setPaymentForm({
+        receiptNumber: '',
+        amount: '',
+        paymentMethod: 'Bank Transfer',
+        notes: ''
+      });
     }
   }, [isOpen, student]);
-
   const handleSubmit = async () => {
     if (!paymentStatus || !reference) {
       toast.error("Please fill in all fields");
@@ -51,7 +75,7 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
       toast.success("Payment status updated successfully!");
   
       // Update the parent component's state
-      onUpdate({ ...student, paymentStatus });
+      onUpdate({ ...student, paymentStatus, reference });
   
       onClose();
     } catch (error) {
@@ -59,44 +83,167 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
       toast.error("Failed to update payment status. Please try again.");
     }
   };
-  
-  if (!isOpen) return null;
+
+  const handleAddPayment = async () => {
+    if (!paymentForm.receiptNumber || !paymentForm.amount) {
+      toast.error("Please fill in receipt number and amount");
+      return;
+    }
+
+    try {
+      // Find student's allocation
+      const allocations = await fetchStudentAllocations(student.regNumber);
+      const unpaidAllocation = allocations.find(a => a.paymentStatus !== 'Paid');
+      
+      if (!unpaidAllocation) {
+        toast.error('No unpaid allocation found for this student');
+        return;
+      }
+
+      const adminEmail = auth.currentUser?.email || '';
+      
+      await addAdminPayment({
+        studentRegNumber: student.regNumber,
+        allocationId: unpaidAllocation.id,
+        receiptNumber: paymentForm.receiptNumber,
+        amount: parseFloat(paymentForm.amount),
+        paymentMethod: paymentForm.paymentMethod,
+        notes: paymentForm.notes
+      }, adminEmail);
+
+      // Update student payment status to Paid
+      await setDoc(doc(getFirestore(), "applications", student.regNumber), { 
+        paymentStatus: "Paid", 
+        reference: paymentForm.receiptNumber 
+      }, { merge: true });
+
+      toast.success('Payment added and approved successfully!');
+      onUpdate({ ...student, paymentStatus: "Paid", reference: paymentForm.receiptNumber });
+      onClose();
+    } catch (error) {
+      console.error("Error adding payment:", error);
+      toast.error('Failed to add payment');
+    }
+  };
+    if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Update Payment Status</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">
+          {showAddPayment ? "Add Payment for Student" : "Update Payment Status"}
+        </h2>
         
-        <div className="mb-4">
-          <Select
-            value={paymentStatus}
-            onValueChange={setPaymentStatus}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select payment status" />
-            </SelectTrigger>
-            <SelectContent>
-              {PAYMENT_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!showAddPayment ? (
+          <>
+            <div className="mb-4">
+              <Label htmlFor="paymentStatus">Payment Status</Label>
+              <Select
+                value={paymentStatus}
+                onValueChange={setPaymentStatus}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select payment status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Input
-          placeholder="Reference"
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-          className="mb-4"
-        />
+            <div className="mb-4">
+              <Label htmlFor="reference">Reference</Label>
+              <Input
+                id="reference"
+                placeholder="Payment reference/receipt number"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex justify-between gap-2 mb-4">
+              <Button 
+                onClick={() => setShowAddPayment(true)} 
+                variant="outline"
+                className="flex-1"
+              >
+                Add Payment
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4 mb-4">
+              <div>
+                <Label htmlFor="receiptNumber">Receipt Number *</Label>
+                <Input
+                  id="receiptNumber"
+                  value={paymentForm.receiptNumber}
+                  onChange={(e) => setPaymentForm({...paymentForm, receiptNumber: e.target.value})}
+                  placeholder="Enter receipt number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="amount">Amount *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                  placeholder="Enter payment amount"
+                />
+              </div>
+              <div>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select
+                  value={paymentForm.paymentMethod}
+                  onValueChange={(value) => setPaymentForm({...paymentForm, paymentMethod: value as Payment['paymentMethod']})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={paymentForm.notes}
+                  onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+                  placeholder="Any additional notes"
+                />
+              </div>
+            </div>
+          </>
+        )}
         
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Save</Button>
+          {showAddPayment ? (
+            <>
+              <Button onClick={() => setShowAddPayment(false)} variant="outline">
+                Back
+              </Button>
+              <Button onClick={handleAddPayment}>
+                Add Payment
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleSubmit}>Save Status</Button>
+          )}
         </div>
       </div>
     </div>

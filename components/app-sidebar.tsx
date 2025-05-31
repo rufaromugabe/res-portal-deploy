@@ -16,6 +16,7 @@ import {
   Users,
   Building,
   Home,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,13 +68,16 @@ export function AppSidebar() {
       items.push(
         { title: "Profile", icon: UserRound, href: "/student/profile" },
         { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" },
-        { title: "Room Selection", icon: Home, href: "/student/room-selection" }
-      );} else if (userRole === "admin") {
+        { title: "Room Selection", icon: Home, href: "/student/room-selection" },
+        { title: "Payments", icon: DollarSign, href: "/student/payments" }
+      );
+    } else if (userRole === "admin") {
       items.push(
         { title: "Accounts", icon: Users, href: "/admin/accounts" },
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Hostels", icon: Building, href: "/admin/hostels" },
+        { title: "Payments", icon: DollarSign, href: "/admin/payments" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
         { title: "Activity logs", icon: Activity, href: "/admin/logs" },
         {title: "Settings", icon: Settings, href: "/admin/settings"}

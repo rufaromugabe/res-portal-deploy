@@ -306,6 +306,27 @@ export const fetchStudentAllocations = async (studentRegNumber: string): Promise
 };
 
 /**
+ * Fetch a specific allocation by ID
+ */
+export const fetchAllocationById = async (allocationId: string): Promise<RoomAllocation | null> => {
+  try {
+    const allocationDoc = doc(db, "roomAllocations", allocationId);
+    const allocationSnap = await getDoc(allocationDoc);
+    
+    if (allocationSnap.exists()) {
+      return {
+        id: allocationSnap.id,
+        ...allocationSnap.data()
+      } as RoomAllocation;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching allocation by ID:", error);
+    return null;
+  }
+};
+
+/**
  * Update payment status for an allocation
  */
 export const updatePaymentStatus = async (
@@ -589,6 +610,43 @@ export const removeOccupantFromRoom = async (
   } catch (error) {
     console.error("Error removing occupant from room:", error);
     throw error;
+  }
+};
+
+/**
+ * Get room details with price from allocation
+ */
+export const getRoomDetailsFromAllocation = async (allocation: RoomAllocation): Promise<{room: Room, hostel: Hostel, price: number} | null> => {
+  try {
+    const hostel = await fetchHostelById(allocation.hostelId);
+    if (!hostel) return null;
+    
+    let roomDetails: Room | null = null;
+    
+    // Find the room in the hostel
+    for (const floor of hostel.floors) {
+      const room = floor.rooms.find(r => r.id === allocation.roomId);
+      if (room) {
+        roomDetails = {
+          ...room,
+          hostelName: hostel.name,
+          floorName: floor.name,
+          price: hostel.pricePerSemester
+        };
+        break;
+      }
+    }
+    
+    if (!roomDetails) return null;
+    
+    return {
+      room: roomDetails,
+      hostel: hostel,
+      price: hostel.pricePerSemester
+    };
+  } catch (error) {
+    console.error("Error getting room details from allocation:", error);
+    return null;
   }
 };
 

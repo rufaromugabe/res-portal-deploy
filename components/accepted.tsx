@@ -185,12 +185,15 @@ const Accepted = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedStudent(null);
-  };
-  const handlePaymentStatusUpdate = (updatedStudent: any) => {
+  };  const handlePaymentStatusUpdate = (updatedStudent: any) => {
     setApplications((prevApplications) =>
       prevApplications.map((app) =>
         app.regNumber === updatedStudent.regNumber
-          ? { ...app, paymentStatus: updatedStudent.paymentStatus }
+          ? { 
+              ...app, 
+              paymentStatus: updatedStudent.paymentStatus,
+              reference: updatedStudent.reference 
+            }
           : app
       )
     );
@@ -349,26 +352,29 @@ const partData = {
               <TableCell>{app.regNumber}</TableCell>
               <TableCell>{app.gender}</TableCell>
               <TableCell>{app.part}</TableCell>
-              <TableCell>
-              <Button
+              <TableCell>              <Button
       onClick={() => handleOpenModal(app)}
       variant="outline"
       className={`mr-2 ${
-        app.paymentStatus === "Fully Paid"
+        app.paymentStatus === "Paid"
           ? "bg-green-500 text-white hover:bg-green-600"
-          : "bg-red-500 text-white hover:bg-red-600"
+          : app.paymentStatus === "Pending"
+          ? "bg-yellow-500 text-white hover:bg-yellow-600"
+          : app.paymentStatus === "Overdue"
+          ? "bg-red-500 text-white hover:bg-red-600"
+          : "bg-gray-500 text-white hover:bg-gray-600"
       }`}
       
     >
-      {app.paymentStatus === "Fully Paid" ? (
+      {app.paymentStatus === "Paid" ? (
         <span className="flex items-center">
-          <Check className="mr-2 h-4 w-4" /> {/* Checkmark icon for fully paid */}
-          Fully Paid
+          <Check className="mr-2 h-4 w-4" />
+          Paid
         </span>
       ) : (
         <span className="flex items-center">
-          <DollarSign className="mr-2 h-4 w-4" /> {/* Dollar sign icon for payment status */}
-          {app.paymentStatus}
+          <DollarSign className="mr-2 h-4 w-4" />
+          {app.paymentStatus || "Not Paid"}
         </span>
       )}
     </Button>
