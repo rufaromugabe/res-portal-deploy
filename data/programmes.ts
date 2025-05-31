@@ -18,7 +18,7 @@ export const programmes = [
     { value: "BTECH_FINANCIAL_ENGINEERING", label: "BTech (Hons) in Financial Engineering" },
     { value: "BTECH_FORENSIC_ACCOUNTING_AUDITING", label: "BTech (Hons) in Forensic Accounting and Auditing" },
     { value: "BTECH_ELECTRONIC_COMMERCE", label: "BTech (Hons) in Electronic Commerce" },
-    { value: "POSTGRADUATE_ULTRASOUND", label: "Postgraduate Diploma in Medical Ultrasound" },
+    { value: "BTECH_THERAPEUTIC_RADIOGRAPHY", label: "Postgraduate Diploma in Medical Ultrasound" },
     { value: "POSTGRADUATE_DOSIMETRY", label: "Postgraduate Diploma in Medical Dosimetry" },
     { value: "MTECH_MACHINE_DESIGN", label: "Master of Technology in Machine Design" },
     { value: "MTECH_INDUSTRIAL_ENGINEERING", label: "Master of Technology in Industrial Engineering and Management" },
