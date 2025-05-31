@@ -470,19 +470,17 @@ const AdminPaymentManagement: React.FC = () => {
             </div>
           )}
         </TabsContent>
-      </Tabs>
-
-      {/* Approve Payment Dialog */}
+      </Tabs>      {/* Approve Payment Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Approve Payment</DialogTitle>
             <DialogDescription>
               Confirm approval of this payment receipt
             </DialogDescription>
           </DialogHeader>
           {selectedPayment && (
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-y-auto">
               <div className="bg-gray-50 p-4 rounded">
                 <p><strong>Student:</strong> {selectedPayment.studentRegNumber}</p>
                 <p><strong>Receipt Number:</strong> {selectedPayment.receiptNumber}</p>
@@ -492,7 +490,7 @@ const AdminPaymentManagement: React.FC = () => {
                   <p><strong>Notes:</strong> {selectedPayment.notes}</p>
                 )}
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
                 <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -503,19 +501,17 @@ const AdminPaymentManagement: React.FC = () => {
             </div>
           )}
         </DialogContent>
-      </Dialog>
-
-      {/* Reject Payment Dialog */}
+      </Dialog>{/* Reject Payment Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Reject Payment</DialogTitle>
             <DialogDescription>
               Provide a reason for rejecting this payment
             </DialogDescription>
           </DialogHeader>
           {selectedPayment && (
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-y-auto">
               <div className="bg-gray-50 p-4 rounded">
                 <p><strong>Student:</strong> {selectedPayment.studentRegNumber}</p>
                 <p><strong>Receipt Number:</strong> {selectedPayment.receiptNumber}</p>
@@ -530,7 +526,7 @@ const AdminPaymentManagement: React.FC = () => {
                   placeholder="Explain why this payment is being rejected..."
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
                 <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -545,18 +541,16 @@ const AdminPaymentManagement: React.FC = () => {
             </div>
           )}
         </DialogContent>
-      </Dialog>
-
-      {/* Add Payment Dialog */}
+      </Dialog>{/* Add Payment Dialog */}
       <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Add Payment</DialogTitle>
             <DialogDescription>
               Add a payment on behalf of a student
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">            <div>
+          <div className="space-y-4 flex-1 overflow-y-auto pr-2"><div>
               <Label htmlFor="studentRegNumber">Student Registration Number *</Label>
               <Input
                 id="studentRegNumber"
@@ -661,9 +655,8 @@ const AdminPaymentManagement: React.FC = () => {
                 value={addPaymentForm.notes}
                 onChange={(e) => setAddPaymentForm({...addPaymentForm, notes: e.target.value})}
                 placeholder="Any additional notes"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
+              />            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
               <Button variant="outline" onClick={() => setAddPaymentDialogOpen(false)}>
                 Cancel
               </Button>
