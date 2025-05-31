@@ -42,8 +42,8 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [priceFilter, setPriceFilter] = useState<string>('any');
   const [capacityFilter, setCapacityFilter] = useState<string>('any');
-  const [loading, setLoading] = useState(true);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [isSelecting, setIsSelecting] = useState<boolean>(false);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
   const [allocationRoomDetails, setAllocationRoomDetails] = useState<any>(null);
   const [allocationChecked, setAllocationChecked] = useState(false);
   const [hostelSettings, setHostelSettings] = useState<any>(null);
@@ -182,19 +182,25 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
 
     return rooms;
   };
-
   const handleRoomSelect = async (room: Room & { hostelName: string; floorName: string; price: number }) => {
+    // Prevent double-clicks by checking if already selecting
+    if (isSelecting) return;
+    
     if (existingAllocation) {
       toast.error('You already have a room allocation. Please contact admin to change.');
       return;
     }
 
+    setIsSelecting(true);
     setSelectedRoom(room);
-  };
-  const confirmRoomSelection = async () => {
-    if (!selectedRoom || !studentProfile) return;
+    
+    // Reset the selecting state after a short delay
+    setTimeout(() => setIsSelecting(false), 1000);
+  };  const confirmRoomSelection = async () => {
+    if (!selectedRoom || !studentProfile || isSelecting) return;
 
     try {
+      setIsSelecting(true);
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) return;
@@ -235,13 +241,15 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       const deadlineHours = settings.paymentGracePeriod;
       const deadlineDays = Math.round(deadlineHours / 24);
       toast.success(`Room ${selectedRoom.number} allocated successfully! Please pay within ${deadlineHours} hours (${deadlineDays} days) to confirm.`);
-      onRoomSelected(selectedRoom.id, selectedHostel);
-      
+      onRoomSelected(selectedRoom.id, selectedHostel);      
       // Refresh data
       loadHostels();
       checkExistingAllocation();
+      setSelectedRoom(null); // Close the modal
     } catch (error) {
       toast.error('Failed to allocate room. Please try again.');
+    } finally {
+      setIsSelecting(false);
     }
   };
 
@@ -472,13 +480,12 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       {/* Rooms Grid */}
       {selectedHostel && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {getFilteredRooms().map((room) => (
-            <Card 
+          {getFilteredRooms().map((room) => (            <Card 
               key={room.id} 
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${getRoomStatusColor(room)} ${
                 selectedRoom?.id === room.id ? 'ring-2 ring-indigo-500' : ''
-              }`}
-              onClick={() => room.isAvailable && !room.isReserved && handleRoomSelect(room)}
+              } ${isSelecting ? 'opacity-50' : ''}`}
+              onClick={() => room.isAvailable && !room.isReserved && !isSelecting && handleRoomSelect(room)}
             >
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -566,19 +573,21 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                   </p>
                 </div>
                 
-                <div className="flex gap-3">
-                  <Button 
+                <div className="flex gap-3">                  <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => setSelectedRoom(null)}
+                    onClick={() => {
+                      setSelectedRoom(null);
+                      setIsSelecting(false);
+                    }}
                   >
                     Cancel
-                  </Button>
-                  <Button 
+                  </Button>                  <Button 
                     className="flex-1"
                     onClick={confirmRoomSelection}
+                    disabled={isSelecting}
                   >
-                    Confirm Selection
+                    {isSelecting ? 'Selecting...' : 'Confirm Selection'}
                   </Button>
                 </div>
               </div>
