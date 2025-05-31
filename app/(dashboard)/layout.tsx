@@ -76,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
         </div>
         <main className="flex-1 h-full flex flex-col min-h-0">
-          <div className="flex-1 bg-white rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden min-h-0 m-2 ml-0 backdrop-blur-sm">
+          <div className="flex-1 bg-white rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden min-h-0 m-2 ml-0 mt-2 backdrop-blur-sm">
             <div className="h-full overflow-y-auto p-2">
               {children}
             </div>;

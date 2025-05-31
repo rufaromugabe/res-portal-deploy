@@ -26,7 +26,7 @@ import { Hostel, Room } from '@/types/hostel';
 import { fetchHostels, allocateRoom, fetchStudentAllocations } from '@/data/hostel-data';
 import { StudentProfile } from './student-profile';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import StudentPaymentManagement from './student-payment-management';
 
@@ -43,17 +43,21 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [priceFilter, setPriceFilter] = useState<string>('any');
   const [capacityFilter, setCapacityFilter] = useState<string>('any');
   const [loading, setLoading] = useState(true);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [existingAllocation, setExistingAllocation] = useState<any>(null);
   const [allocationRoomDetails, setAllocationRoomDetails] = useState<any>(null);
+  const [allocationChecked, setAllocationChecked] = useState(false);
+
   useEffect(() => {
     loadHostels();
   }, []);
 
   useEffect(() => {
-    if (hostels.length > 0) {
+    if (hostels.length > 0 && !allocationChecked) {
+      setAllocationChecked(true);
       checkExistingAllocation();
     }
-  }, [hostels]);
+  }, [hostels, allocationChecked]);
 
   const loadHostels = async () => {
     try {
@@ -64,34 +68,65 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     } finally {
       setLoading(false);
     }
-  };
-  const checkExistingAllocation = async () => {
+  };  const checkExistingAllocation = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const regNumber = user.email?.split('@')[0] || '';
-      const allocations = await fetchStudentAllocations(regNumber);
-      if (allocations.length > 0) {
-        setExistingAllocation(allocations[0]);
-        
-        // Fetch room details for the allocation
-        const allocation = allocations[0];
-        const hostel = hostels.find(h => h.id === allocation.hostelId);
-        if (hostel) {
-          let roomDetails = null;
-          hostel.floors.forEach(floor => {
-            floor.rooms.forEach(room => {
-              if (room.id === allocation.roomId) {
-                roomDetails = {
-                  ...room,
-                  hostelName: hostel.name,
-                  floorName: floor.name
-                };
-              }
-            });
-          });
-          setAllocationRoomDetails(roomDetails);
+      const emailDomain = user.email?.split("@")[1] || "";
+      let regNumber = "";
+
+      try {
+        if (emailDomain === "hit.ac.zw") {
+          // For hit.ac.zw domain users
+          regNumber = user.email?.split("@")[0] || "";
+        } else if (emailDomain === "gmail.com" && user.email) {
+          // For gmail.com users, find them by email first
+          const usersRef = collection(db, "students");
+          const q = query(usersRef, where("email", "==", user.email));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            // User exists in database
+            const userData = querySnapshot.docs[0].data();
+            regNumber = userData.regNumber || "";
+          } else {
+            // User doesn't exist in database
+            console.log("User not found in database");
+            return;
+          }
+        } else {
+          // Unsupported email domain
+          console.log("Unsupported email domain");
+          return;
         }
+
+        if (regNumber) {
+          const allocations = await fetchStudentAllocations(regNumber);
+          if (allocations.length > 0) {
+            setExistingAllocation(allocations[0]);
+            
+            // Fetch room details for the allocation
+            const allocation = allocations[0];
+            const hostel = hostels.find(h => h.id === allocation.hostelId);
+            if (hostel) {
+              let roomDetails = null;
+              hostel.floors.forEach(floor => {
+                floor.rooms.forEach(room => {
+                  if (room.id === allocation.roomId) {
+                    roomDetails = {
+                      ...room,
+                      hostelName: hostel.name,
+                      floorName: floor.name
+                    };
+                  }
+                });
+              });
+              setAllocationRoomDetails(roomDetails);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking existing allocation:", error);
       }
     }
   };
@@ -148,7 +183,6 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
 
     setSelectedRoom(room);
   };
-
   const confirmRoomSelection = async () => {
     if (!selectedRoom || !studentProfile) return;
 
@@ -157,7 +191,35 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       const user = auth.currentUser;
       if (!user) return;
 
-      const regNumber = user.email?.split('@')[0] || '';
+      const emailDomain = user.email?.split("@")[1] || "";
+      let regNumber = "";
+
+      if (emailDomain === "hit.ac.zw") {
+        // For hit.ac.zw domain users
+        regNumber = user.email?.split("@")[0] || "";
+      } else if (emailDomain === "gmail.com" && user.email) {
+        // For gmail.com users, find them by email first
+        const usersRef = collection(db, "students");
+        const q = query(usersRef, where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // User exists in database
+          const userData = querySnapshot.docs[0].data();
+          regNumber = userData.regNumber || "";
+        } else {
+          toast.error("Profile not found. Please complete your profile first.");
+          return;
+        }
+      } else {
+        toast.error("Unsupported email domain.");
+        return;
+      }
+
+      if (!regNumber) {
+        toast.error("Registration number not found. Please complete your profile first.");
+        return;
+      }
       
       await allocateRoom(regNumber, selectedRoom.id, selectedHostel);
       

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import RoomSelection from '@/components/room-selection';
 import { StudentProfile } from '@/components/student-profile';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'react-toastify';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -14,17 +14,56 @@ const RoomSelectionPage: React.FC = () => {
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState<any>(null);
-
+  const [fetchAttempted, setFetchAttempted] = useState(false);
   useEffect(() => {
-    fetchStudentProfile();
-  }, []);
+    if (!fetchAttempted) {
+      setFetchAttempted(true);
+      fetchStudentProfile();
+    }
+  }, [fetchAttempted]);
+
   const fetchStudentProfile = async () => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       
-      if (user) {
-        const regNumber = user.email?.split('@')[0] || '';
+      if (user && user.email) {
+        const emailDomain = user.email.split('@')[1];
+        let regNumber = '';
+        
+        if (emailDomain === 'hit.ac.zw') {
+          // For hit.ac.zw emails, use email prefix as registration number
+          regNumber = user.email.split('@')[0];
+        } else if (emailDomain === 'gmail.com') {
+          // For gmail.com emails, query the database to find the registration number
+          try {
+            const studentsQuery = query(
+              collection(db, 'students'),
+              where('email', '==', user.email)
+            );
+            const querySnapshot = await getDocs(studentsQuery);
+            
+            if (!querySnapshot.empty) {
+              regNumber = querySnapshot.docs[0].id;
+            } else {
+              // User not found in database - don't show toast here, let the UI handle it
+              console.log('User not found in database');
+              setLoading(false);
+              return;
+            }
+          } catch (queryError) {
+            console.error('Error querying student by email:', queryError);
+            // Don't show toast here, let the general error handler deal with it
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Unsupported email domain - don't show toast here, let the UI handle it
+          console.log('Unsupported email domain');
+          setLoading(false);
+          return;
+        }
+        
         const userDoc = doc(db, 'students', regNumber);
         const applicationDoc = doc(db, 'applications', regNumber);
         
@@ -35,9 +74,8 @@ const RoomSelectionPage: React.FC = () => {
         
         if (userSnap.exists()) {
           setStudentProfile(userSnap.data() as StudentProfile);
-        } else {
-          toast.error('Please complete your profile before selecting a room');
         }
+        // Don't show toast if profile doesn't exist - let the UI handle it
 
         if (applicationSnap.exists()) {
           setApplication(applicationSnap.data());
@@ -45,7 +83,8 @@ const RoomSelectionPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching student profile:', error);
-      toast.error('Failed to load student profile');
+      // Only show one toast for general errors
+      toast.error('Failed to load student data');
     } finally {
       setLoading(false);
     }
@@ -69,9 +108,22 @@ const RoomSelectionPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                Go to your profile page and fill in all required information, then return here to select your accommodation.
-              </p>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Go to your profile page and fill in all required information, then return here to select your accommodation.
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> If you're using a non-HIT email address, make sure to complete the profile setup process first.
+                  </p>
+                </div>
+                <a 
+                  href="/student/profile" 
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Complete Profile
+                </a>
+              </div>
             </CardContent>
           </Card>
         </div>

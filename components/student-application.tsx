@@ -52,19 +52,49 @@ const StudentApplicationForm: React.FC = () => {
     defaultValues: {
       preferredHostel: "",
     },
-  });
-  // Fetch authenticated user's profile and application
+  });  // Fetch authenticated user's profile and application
   useEffect(() => {
     const fetchProfileAndApplication = async () => {
       const auth = getAuth();
       const user = auth.currentUser;
 
       if (user) {
-        const regNumber = user.email?.split("@")[0] || "";
-        const userDoc = doc(db, "students", regNumber);
-        const applicationDoc = doc(db, "applications", regNumber);
+        const emailDomain = user.email?.split("@")[1] || "";
+        let regNumber = "";
+        let userDoc;
+        let applicationDoc;
 
         try {
+          if (emailDomain === "hit.ac.zw") {
+            // For hit.ac.zw domain users
+            regNumber = user.email?.split("@")[0] || "";
+            userDoc = doc(db, "students", regNumber);
+            applicationDoc = doc(db, "applications", regNumber);
+          } else if (emailDomain === "gmail.com" && user.email) {
+            // For gmail.com users, find them by email first
+            const usersRef = collection(db, "students");
+            const q = query(usersRef, where("email", "==", user.email));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+              // User exists in database
+              const userData = querySnapshot.docs[0].data();
+              regNumber = userData.regNumber || "";
+              userDoc = doc(db, "students", regNumber);
+              applicationDoc = doc(db, "applications", regNumber);
+            } else {
+              // User doesn't exist in database
+              console.log("User not found in database");
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // Unsupported email domain
+            console.log("Unsupported email domain");
+            setIsLoading(false);
+            return;
+          }
+
           // Fetch profile
           const profileSnap = await getDoc(userDoc);
           if (profileSnap.exists()) {
@@ -75,15 +105,19 @@ const StudentApplicationForm: React.FC = () => {
           const applicationSnap = await getDoc(applicationDoc);
           if (applicationSnap.exists()) {
             setApplication(applicationSnap.data() as ApplicationData);
-          }          // Fetch hostels
+          }
+
+          // Fetch hostels
           const hostelData = await fetchHostels();
-          setHostels(hostelData);          // Check for room allocation
-          if (profileSnap.exists()) {
+          setHostels(hostelData);
+
+          // Check for room allocation
+          if (profileSnap.exists() && regNumber) {
             const allocations = await fetchStudentAllocations(regNumber);
             if (allocations.length > 0) {
               const allocation = allocations[0];
               setRoomAllocation(allocation);
-                // Fetch room details
+              // Fetch room details
               const details = await getRoomDetailsFromAllocation(allocation);
               if (details) {
                 setRoomDetails({
@@ -235,8 +269,7 @@ const StudentApplicationForm: React.FC = () => {
         </div>
       </div>
     );
-  }
-  if (application) {
+  }  if (application) {
     return (
       <div className="flex items-center justify-center h-full overflow-auto">
         <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
@@ -299,6 +332,33 @@ const StudentApplicationForm: React.FC = () => {
         >
           Delete Application
         </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if profile data is missing (could happen for non-hit.ac.zw users)
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+          <h2 className="text-3xl font-bold mb-6 text-center text-red-600">
+            Profile Required
+          </h2>
+          <p className="text-gray-600 mb-8 text-center">
+            You need to complete your profile before submitting an application.
+          </p>
+          <div className="bg-yellow-50 p-4 rounded border border-yellow-200 mb-6">
+            <p className="text-yellow-800">
+              Please go to your profile page and complete all required information first.
+            </p>
+          </div>
+          <Button
+            onClick={() => window.location.href = '/student/profile'}
+            className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700"
+          >
+            Go to Profile
+          </Button>
         </div>
       </div>
     );

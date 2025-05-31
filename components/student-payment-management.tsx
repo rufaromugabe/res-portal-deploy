@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAuth } from 'firebase/auth';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { toast } from 'react-toastify';
 import { Plus, Edit, Eye, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { 
@@ -33,6 +35,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedAllocation, setSelectedAllocation] = useState<RoomAllocation | null>(null);
+  const [regNumber, setRegNumber] = useState<string>('');
 
   // Form states
   const [formData, setFormData] = useState({
@@ -43,11 +46,64 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
   });
 
   const auth = getAuth();
-  const regNumber = studentRegNumber || auth.currentUser?.email?.split('@')[0] || '';
+
+  // Function to determine registration number based on email domain
+  const determineRegNumber = async (): Promise<string> => {
+    if (studentRegNumber) {
+      return studentRegNumber;
+    }
+
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      return '';
+    }
+
+    const emailDomain = user.email.split("@")[1] || "";
+
+    if (emailDomain === "hit.ac.zw") {
+      // For hit.ac.zw domain users
+      return user.email.split("@")[0] || "";
+    } else if (emailDomain === "gmail.com") {
+      // For gmail.com users, find them by email first
+      try {
+        const usersRef = collection(db, "students");
+        const q = query(usersRef, where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // User exists in database
+          const userData = querySnapshot.docs[0].data();
+          return userData.regNumber || "";
+        } else {
+          // User doesn't exist in database
+          console.log("User not found in database");
+          return "";
+        }
+      } catch (error) {
+        console.error("Error finding user by email:", error);
+        return "";
+      }
+    } else {
+      // Unsupported email domain
+      console.log("Unsupported email domain");
+      return "";
+    }
+  };
 
   useEffect(() => {
-    loadData();
-  }, [regNumber]);  const loadData = async () => {
+    const initializeRegNumber = async () => {
+      const determinedRegNumber = await determineRegNumber();
+      setRegNumber(determinedRegNumber);
+    };
+
+    initializeRegNumber();
+  }, [studentRegNumber, auth.currentUser]);
+
+  useEffect(() => {
+    if (regNumber) {
+      loadData();
+    }
+  }, [regNumber]);const loadData = async () => {
     try {
       setLoading(true);
       const [paymentsData, allocationsData] = await Promise.all([
@@ -214,12 +270,39 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
     allocation.paymentStatus !== 'Paid' && 
     !payments.find(p => p.allocationId === allocation.id && p.status === 'Pending')
   );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
+    );
+  }
+
+  // Check if regNumber is available
+  if (!regNumber) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-red-600">Profile Required</CardTitle>
+          <CardDescription>
+            You need to complete your profile before accessing payment management.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Please go to your profile page and complete all required information first.
+            </AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => window.location.href = '/student/profile'}
+            className="mt-4 bg-blue-600 hover:bg-blue-700"
+          >
+            Go to Profile
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
