@@ -143,10 +143,12 @@ export const fetchAvailableRooms = async (gender: 'Male' | 'Female'): Promise<Ro
 export const allocateRoom = async (
   studentRegNumber: string,
   roomId: string,
-  hostelId: string,
-  paymentDeadlineDays: number = 7
+  hostelId: string
 ): Promise<RoomAllocation> => {
   try {
+    // Fetch hostel settings to get the grace period (which equals the deadline)
+    const settings = await fetchHostelSettings();
+    
     // Create room allocation record
     const allocation: Omit<RoomAllocation, 'id'> = {
       studentRegNumber,
@@ -154,7 +156,7 @@ export const allocateRoom = async (
       hostelId,
       allocatedAt: new Date().toISOString(),
       paymentStatus: 'Pending',
-      paymentDeadline: new Date(Date.now() + paymentDeadlineDays * 24 * 60 * 60 * 1000).toISOString(),
+      paymentDeadline: new Date(Date.now() + settings.paymentGracePeriod * 60 * 60 * 1000).toISOString(),
       semester: getCurrentSemester(),
       academicYear: getCurrentAcademicYear()
     };
@@ -354,6 +356,57 @@ export const updatePaymentStatus = async (
 };
 
 /**
+ * Check and update overdue payment statuses
+ */
+export const checkAndUpdateOverduePayments = async (): Promise<{
+  checkedCount: number;
+  overdueCount: number;
+  updatedCount: number;
+}> => {
+  try {
+    const now = new Date();
+    
+    // Fetch all pending allocations
+    const allocationsCollection = collection(db, "roomAllocations");
+    const pendingQuery = query(
+      allocationsCollection,
+      where("paymentStatus", "==", "Pending")
+    );
+    
+    const pendingAllocationsSnap = await getDocs(pendingQuery);
+    const overdueAllocations: string[] = [];
+    
+    // Check which allocations are overdue
+    pendingAllocationsSnap.docs.forEach(doc => {
+      const allocation = doc.data() as RoomAllocation;
+      const deadlineDate = new Date(allocation.paymentDeadline);
+      
+      if (now > deadlineDate) {
+        overdueAllocations.push(doc.id);
+      }
+    });
+    
+    // Update overdue allocations
+    const updatePromises = overdueAllocations.map(allocationId => 
+      updatePaymentStatus(allocationId, 'Overdue')
+    );
+    
+    await Promise.all(updatePromises);
+    
+    console.log(`Updated ${overdueAllocations.length} allocations to overdue status`);
+    
+    return {
+      checkedCount: pendingAllocationsSnap.docs.length,
+      overdueCount: overdueAllocations.length,
+      updatedCount: overdueAllocations.length
+    };
+  } catch (error) {
+    console.error("Error checking and updating overdue payments:", error);
+    throw error;
+  }
+};
+
+/**
  * Get hostel settings
  */
 export const fetchHostelSettings = async (): Promise<HostelSettings> => {
@@ -364,10 +417,9 @@ export const fetchHostelSettings = async (): Promise<HostelSettings> => {
     if (settingsSnap.exists()) {
       return settingsSnap.data() as HostelSettings;
     }
-    
-    // Default settings
+      // Default settings
     return {
-      paymentGracePeriod: 7,
+      paymentGracePeriod: 168, // 168 hours = 7 days (grace period = deadline)
       autoRevokeUnpaidAllocations: true,
       maxRoomCapacity: 4,
       allowMixedGender: false
@@ -375,7 +427,7 @@ export const fetchHostelSettings = async (): Promise<HostelSettings> => {
   } catch (error) {
     console.error("Error fetching hostel settings:", error);
     return {
-      paymentGracePeriod: 7,
+      paymentGracePeriod: 168, // 168 hours = 7 days (grace period = deadline)
       autoRevokeUnpaidAllocations: true,
       maxRoomCapacity: 4,
       allowMixedGender: false

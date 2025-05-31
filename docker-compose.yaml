@@ -14,3 +14,19 @@ services:
       - .env.local
     restart: always
     command: sh -c "npm install && npm run build && npm start"
+
+  # Cron service for automated payment deadline checks
+  payment-checker:
+    image: curlimages/curl:latest
+    container_name: rez-payment-checker
+    depends_on:
+      - nextjs
+    environment:
+      - API_URL=http://res.afrainity.com:3000/api/check-payment-deadlines
+      - PAYMENT_CHECK_TOKEN=${PAYMENT_CHECK_TOKEN:-default-secure-token}
+    restart: always
+    command: >
+      sh -c "
+        echo '* * * * * curl -X POST -H \"Authorization: Bearer $${PAYMENT_CHECK_TOKEN}\" -H \"Content-Type: application/json\" $${API_URL} >> /var/log/payment-check.log 2>&1' > /etc/crontabs/root &&
+        crond -f
+      "

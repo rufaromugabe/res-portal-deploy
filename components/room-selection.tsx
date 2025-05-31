@@ -23,7 +23,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { Hostel, Room } from '@/types/hostel';
-import { fetchHostels, allocateRoom, fetchStudentAllocations } from '@/data/hostel-data';
+import { fetchHostels, allocateRoom, fetchStudentAllocations, fetchHostelSettings } from '@/data/hostel-data';
 import { StudentProfile } from './student-profile';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -43,13 +43,13 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [priceFilter, setPriceFilter] = useState<string>('any');
   const [capacityFilter, setCapacityFilter] = useState<string>('any');
   const [loading, setLoading] = useState(true);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [existingAllocation, setExistingAllocation] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
   const [allocationRoomDetails, setAllocationRoomDetails] = useState<any>(null);
   const [allocationChecked, setAllocationChecked] = useState(false);
-
+  const [hostelSettings, setHostelSettings] = useState<any>(null);
   useEffect(() => {
     loadHostels();
+    loadHostelSettings();
   }, []);
 
   useEffect(() => {
@@ -58,7 +58,6 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       checkExistingAllocation();
     }
   }, [hostels, allocationChecked]);
-
   const loadHostels = async () => {
     try {
       const hostelData = await fetchHostels();
@@ -68,7 +67,16 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     } finally {
       setLoading(false);
     }
-  };  const checkExistingAllocation = async () => {
+  };
+
+  const loadHostelSettings = async () => {
+    try {
+      const settings = await fetchHostelSettings();
+      setHostelSettings(settings);
+    } catch (error) {
+      console.error('Failed to load hostel settings:', error);
+    }
+  };const checkExistingAllocation = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
@@ -218,12 +226,15 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
 
       if (!regNumber) {
         toast.error("Registration number not found. Please complete your profile first.");
-        return;
-      }
+        return;      }
       
+      // Fetch settings to get the grace period (deadline)
+      const settings = await fetchHostelSettings();
       await allocateRoom(regNumber, selectedRoom.id, selectedHostel);
       
-      toast.success(`Room ${selectedRoom.number} allocated successfully! Please pay within 7 days to confirm.`);
+      const deadlineHours = settings.paymentGracePeriod;
+      const deadlineDays = Math.round(deadlineHours / 24);
+      toast.success(`Room ${selectedRoom.number} allocated successfully! Please pay within ${deadlineHours} hours (${deadlineDays} days) to confirm.`);
       onRoomSelected(selectedRoom.id, selectedHostel);
       
       // Refresh data
@@ -547,9 +558,11 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-600" />
                     <p className="text-sm font-medium text-yellow-800">Payment Required</p>
-                  </div>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    You must pay within 7 days to confirm your room allocation.
+                  </div>                  <p className="text-sm text-yellow-700 mt-1">
+                    {hostelSettings 
+                      ? `You must pay within ${hostelSettings.paymentGracePeriod} hours (${Math.round(hostelSettings.paymentGracePeriod / 24)} days) to confirm your room allocation.`
+                      : 'You must pay within the specified time period to confirm your room allocation.'
+                    }
                   </p>
                 </div>
                 

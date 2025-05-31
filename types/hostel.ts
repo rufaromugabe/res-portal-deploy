@@ -69,7 +69,7 @@ export interface RoomAllocation {
 }
 
 export interface HostelSettings {
-  paymentGracePeriod: number; // Days after allocation before payment is required
+  paymentGracePeriod: number; // Hours after deadline before allocation is revoked (grace period = deadline)
   autoRevokeUnpaidAllocations: boolean;
   maxRoomCapacity: number;
   allowMixedGender: boolean;

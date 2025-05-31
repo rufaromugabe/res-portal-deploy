@@ -289,7 +289,6 @@ const AdminHostelManagement: React.FC = () => {
       toast.error('Failed to update room capacity');
     }
   };
-
   const handleUpdateSettings = async () => {
     try {
       await updateHostelSettings(settings);
@@ -297,6 +296,36 @@ const AdminHostelManagement: React.FC = () => {
       setIsSettingsDialogOpen(false);
     } catch (error) {
       toast.error('Failed to update settings');
+    }
+  };
+
+  const handleCheckPaymentDeadlines = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/check-payment-deadlines', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_PAYMENT_CHECK_TOKEN || 'default-secure-token'}`
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        if (result.revokedCount > 0) {
+          toast.success(`Successfully revoked ${result.revokedCount} expired allocations`);
+        } else {
+          toast.info('No expired allocations found to revoke');
+        }
+        loadData(); // Refresh hostel data
+      } else {
+        toast.error(`Failed to check payment deadlines: ${result.message}`);
+      }
+    } catch (error) {
+      toast.error('Failed to check payment deadlines');
+    } finally {
+      setLoading(false);
     }
   };
   const handleAddRoomsInRange = async () => {
@@ -634,9 +663,8 @@ const AdminHostelManagement: React.FC = () => {
                   Configure global hostel management settings
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                <div>
-                  <Label htmlFor="gracePeriod">Payment Grace Period (days)</Label>
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">                <div>
+                  <Label htmlFor="gracePeriod">Payment Grace Period (hours)</Label>
                   <Input
                     id="gracePeriod"
                     type="number"
@@ -646,6 +674,9 @@ const AdminHostelManagement: React.FC = () => {
                       paymentGracePeriod: Number(e.target.value)
                     })}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Grace period in hours after payment deadline. Total time = deadline + grace period.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="maxCapacity">Maximum Room Capacity</Label>
@@ -682,9 +713,16 @@ const AdminHostelManagement: React.FC = () => {
                     })}
                   />
                   <Label htmlFor="mixedGender">Allow mixed gender rooms</Label>
-                </div>
-                <Button onClick={handleUpdateSettings} className="w-full">
+                </div>                <Button onClick={handleUpdateSettings} className="w-full">
                   Update Settings
+                </Button>
+                <Button 
+                  onClick={handleCheckPaymentDeadlines} 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? 'Checking...' : 'Check Payment Deadlines Now'}
                 </Button>
               </div>
             </DialogContent>
