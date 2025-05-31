@@ -43,6 +43,7 @@ import {
   addRoomsInRange,
   addFloorToHostel,
   removeRoom,
+  removeFloor,
   removeOccupantFromRoom
 } from '@/data/hostel-data';
 import { getAuth } from 'firebase/auth';
@@ -149,12 +150,11 @@ const AdminHostelManagement: React.FC = () => {
       toast.error('Failed to create hostel');
     }
   };
-
   const handleDeleteHostel = async (hostelId: string) => {
-    if (window.confirm('Are you sure you want to delete this hostel? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to delete this hostel? This will also remove all related room allocations and cannot be undone.')) {
       try {
         await deleteHostel(hostelId);
-        toast.success('Hostel deleted successfully');
+        toast.success('Hostel and all related allocations deleted successfully');
         loadData();
       } catch (error) {
         toast.error('Failed to delete hostel');
@@ -416,12 +416,11 @@ const AdminHostelManagement: React.FC = () => {
     } catch (error) {
       toast.error('Failed to add floor');
     }
-  };
-  const handleRemoveRoom = async (hostelId: string, roomId: string, roomNumber: string) => {
-    if (window.confirm(`Are you sure you want to remove room ${roomNumber}? This action cannot be undone.`)) {
+  };  const handleRemoveRoom = async (hostelId: string, roomId: string, roomNumber: string) => {
+    if (window.confirm(`Are you sure you want to remove room ${roomNumber}? This will also remove all related room allocations and cannot be undone.`)) {
       try {
         await removeRoom(hostelId, roomId);
-        toast.success(`Room ${roomNumber} removed successfully`);
+        toast.success(`Room ${roomNumber} and all related allocations removed successfully`);
         
         // Update selectedHostel state immediately
         if (selectedHostel && selectedHostel.id === hostelId) {
@@ -438,6 +437,29 @@ const AdminHostelManagement: React.FC = () => {
         loadData();
       } catch (error) {
         toast.error('Failed to remove room');
+      }
+    }
+  };
+
+  const handleRemoveFloor = async (hostelId: string, floorId: string, floorName: string) => {
+    if (window.confirm(`Are you sure you want to remove floor "${floorName}"? This will remove all rooms in this floor and their related allocations. This action cannot be undone.`)) {
+      try {
+        await removeFloor(hostelId, floorId);
+        toast.success(`Floor "${floorName}" and all related rooms and allocations removed successfully`);
+        
+        // Update selectedHostel state immediately
+        if (selectedHostel && selectedHostel.id === hostelId) {
+          const updatedHostel = { ...selectedHostel };
+          const floorIndex = updatedHostel.floors.findIndex(f => f.id === floorId);
+          if (floorIndex !== -1) {
+            updatedHostel.floors.splice(floorIndex, 1);
+          }
+          setSelectedHostel(updatedHostel);
+        }
+        
+        loadData();
+      } catch (error) {
+        toast.error('Failed to remove floor');
       }
     }
   };const handleRemoveOccupant = (hostel: Hostel, roomId: string, occupantRegNumber: string) => {
@@ -1085,10 +1107,22 @@ const AdminHostelManagement: React.FC = () => {
               </div>
             </DialogHeader>
             
-            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-              {selectedHostel.floors.map((floor) => (
+            <div className="space-y-6 flex-1 overflow-y-auto pr-2">              {selectedHostel.floors.map((floor) => (
                 <div key={floor.id} className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">{floor.name}</h3>
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="text-lg font-semibold">{floor.name}</h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRemoveFloor(selectedHostel.id, floor.id, floor.name)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={floor.rooms.some(room => room.occupants.length > 0)}
+                      title={floor.rooms.some(room => room.occupants.length > 0) ? "Cannot remove floor with occupied rooms" : `Remove floor "${floor.name}"`}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove Floor
+                    </Button>
+                  </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {floor.rooms.map((room) => (

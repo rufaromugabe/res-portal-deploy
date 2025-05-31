@@ -46,7 +46,7 @@ const AdminAccountManagement = () => {
     loadingRef.current = loading;
   }, [loading]);  const fetchUsers = useCallback(async (paginate = false) => {
     if (!hasMoreRef.current && paginate) return;
-    if (loadingRef.current) return; // Prevent multiple simultaneous requests
+    if (loadingRef.current) return; 
     
     setLoading(true);
     try {

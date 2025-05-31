@@ -84,6 +84,17 @@ export const updateHostel = async (hostelId: string, updates: Partial<Hostel>): 
  */
 export const deleteHostel = async (hostelId: string): Promise<void> => {
   try {
+    // Remove all related room allocations before deleting the hostel
+    const allocationsCollection = collection(db, "roomAllocations");
+    const q = query(allocationsCollection, where("hostelId", "==", hostelId));
+    
+    const allocationsSnap = await getDocs(q);
+    const deletePromises = allocationsSnap.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+    console.log(`Removed ${allocationsSnap.docs.length} allocation(s) for hostel ${hostelId}`);
+
+    // Delete the hostel document
     const hostelDoc = doc(db, "hostels", hostelId);
     await deleteDoc(hostelDoc);
   } catch (error) {
@@ -543,12 +554,75 @@ export const removeRoom = async (hostelId: string, roomId: string): Promise<void
       throw new Error("Room not found");
     }
 
+    // Remove all related room allocations before removing the room
+    const allocationsCollection = collection(db, "roomAllocations");
+    const q = query(
+      allocationsCollection,
+      where("roomId", "==", roomId),
+      where("hostelId", "==", hostelId)
+    );
+    
+    const allocationsSnap = await getDocs(q);
+    const deletePromises = allocationsSnap.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+    console.log(`Removed ${allocationsSnap.docs.length} allocation(s) for room ${roomId}`);
+
     // Update total capacity
     hostel.totalCapacity -= roomCapacity;
 
     await updateHostel(hostelId, hostel);
   } catch (error) {
     console.error("Error removing room:", error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a floor from a hostel and all its related allocations
+ */
+export const removeFloor = async (hostelId: string, floorId: string): Promise<void> => {
+  try {
+    const hostel = await fetchHostelById(hostelId);
+    if (!hostel) throw new Error("Hostel not found");
+
+    const floorIndex = hostel.floors.findIndex(f => f.id === floorId);
+    if (floorIndex === -1) {
+      throw new Error("Floor not found");
+    }
+
+    const floor = hostel.floors[floorIndex];
+    
+    // Remove all related room allocations for all rooms in this floor
+    const allocationsCollection = collection(db, "roomAllocations");
+    const roomIds = floor.rooms.map(room => room.id);
+    
+    if (roomIds.length > 0) {
+      const q = query(
+        allocationsCollection,
+        where("hostelId", "==", hostelId),
+        where("roomId", "in", roomIds)
+      );
+      
+      const allocationsSnap = await getDocs(q);
+      const deletePromises = allocationsSnap.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      console.log(`Removed ${allocationsSnap.docs.length} allocation(s) for floor ${floor.name}`);
+    }
+
+    // Calculate total capacity being removed
+    const removedCapacity = floor.rooms.reduce((total, room) => total + room.capacity, 0);
+
+    // Remove the floor
+    hostel.floors.splice(floorIndex, 1);
+    
+    // Update total capacity
+    hostel.totalCapacity -= removedCapacity;
+
+    await updateHostel(hostelId, hostel);
+  } catch (error) {
+    console.error("Error removing floor:", error);
     throw error;
   }
 };
