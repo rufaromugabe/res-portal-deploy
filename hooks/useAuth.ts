@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Models, ID } from 'appwrite'; // Import Models and ID
+import { Models, ID, Permission, Role } from 'appwrite'; // Import Models, ID, Permission, Role
 import { account, databases } from '@/lib/appwrite'; // Import from new appwrite.ts
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 // Ensure these environment variables are set in your .env.local
 const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'DB_ID_PLACEHOLDER';
 const APPWRITE_USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || 'USERS_COLLECTION_ID_PLACEHOLDER';
+const ADMIN_TEAM_ID = process.env.NEXT_PUBLIC_APPWRITE_ADMIN_TEAM_ID || 'admins'; // Used for document permissions
 
 type UserRole = 'user' | 'admin' | null;
 
@@ -46,7 +47,15 @@ export function useAuth() {
             APPWRITE_DATABASE_ID,
             APPWRITE_USERS_COLLECTION_ID,
             loggedInUser.$id, // Use Appwrite user ID as document ID
-            newUserDocumentData
+            newUserDocumentData,
+            [ // Document-level permissions
+              Permission.read(Role.user(loggedInUser.$id)),
+              Permission.update(Role.user(loggedInUser.$id)),
+              Permission.delete(Role.user(loggedInUser.$id)),
+              Permission.read(Role.team(ADMIN_TEAM_ID)),
+              Permission.update(Role.team(ADMIN_TEAM_ID)),
+              Permission.delete(Role.team(ADMIN_TEAM_ID)),
+            ]
           );
           setRole(newUserDocument.role as UserRole);
           // Optionally, update user state with combined data
