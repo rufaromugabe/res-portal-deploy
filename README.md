@@ -192,7 +192,50 @@ Access the admin panel to configure:
 1. **Payment Deadline Checks**: Automated via cron job (payment-checker service)
 
 
-### Troubleshooting
+## Quick Verification Checklist
+
+After deployment, verify your system is working:
+
+### ✅ Container Status
+```bash
+# Check both containers are running
+docker ps
+
+# Expected output should show:
+# - rez-application (port 3001:3000)
+# - rez-payment-checker
+```
+
+### ✅ Application Access
+- Open browser to: `http://localhost:3001`
+- You should see the HIT Student Accommodation Portal login page
+- No connection errors or blank pages
+
+### ✅ Payment Checker
+```bash
+# Check payment checker logs
+docker logs rez-payment-checker
+
+# Should show successful Alpine package installation and cron setup
+```
+
+### ✅ Environment Configuration
+- Verify `.env.local` file exists with all required variables
+- Firebase configuration is complete
+- Base URL is set correctly
+
+### ✅ API Endpoints
+- Payment deadline API should be accessible
+- Test at: `http://localhost:3001/api/check-payment-deadlines`
+- Should return JSON response (may show 401 without auth token - this is normal)
+
+### 🔧 Troubleshooting Tools
+
+Use these verification scripts:
+- **PowerShell**: `.\verify-system.ps1`
+- **Bash**: `bash verify-system.sh` (Linux/macOS)
+
+## Troubleshooting
 
 **Common Issues**:
 
