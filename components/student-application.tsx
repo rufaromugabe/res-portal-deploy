@@ -12,6 +12,13 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'react-toastify';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -37,6 +44,19 @@ interface ApplicationData {
   submittedAt: string;
   status: "Pending" | "Accepted";
 }
+
+// Function to check if applications are restricted
+const isApplicationRestricted = (regNumber: string): boolean => {
+  const currentDate = new Date();
+  const restrictionEndDate = new Date('2025-06-04T08:00:00'); // June 4, 2025 at 08:00
+  
+  // If current date is before restriction end date, only allow H250XXXX registration numbers
+  if (currentDate < restrictionEndDate) {
+    return !regNumber.startsWith('H250');
+  }
+  
+  return false; // After June 4, 2025 08:00, all registrations are allowed
+};
 
 const StudentApplicationForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -336,7 +356,6 @@ const StudentApplicationForm: React.FC = () => {
       </div>
     );
   }
-
   // Check if profile data is missing (could happen for non-hit.ac.zw users)
   if (!profile) {
     return (
@@ -363,6 +382,28 @@ const StudentApplicationForm: React.FC = () => {
       </div>
     );
   }
+
+  // Check if applications are restricted for this user
+  if (isApplicationRestricted(profile.regNumber)) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
+          <h2 className="text-3xl font-bold mb-6 text-center text-orange-600">
+            Applications Restricted
+          </h2>
+          <div className="bg-orange-50 p-6 rounded border border-orange-200 mb-6">
+            <p className="text-orange-800 text-lg font-medium text-center">
+              Only Part 1s can apply at the moment. Applications will open for everyone else on 4 June 2025 at 08:00. Thank you.
+            </p>
+          </div>
+          <div className="text-center text-gray-600">
+            <p>Your registration number: <strong>{profile.regNumber}</strong></p>
+            <p className="mt-2">Please check back after the restriction period ends.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center justify-center h-full overflow-auto">
       <div className="max-w-5xl w-full mx-auto bg-white p-8 rounded-lg shadow-sm">
@@ -377,26 +418,27 @@ const StudentApplicationForm: React.FC = () => {
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-8 max-w-4xl mx-auto"
-        >
-          <FormField
+        >          <FormField
             control={form.control}
             name="preferredHostel"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-medium">
                   Preferred Hostel
-                </FormLabel>                <FormControl>
-                  <select
-                    className="form-select block w-full mt-1"
-                    {...field}
-                  >
-                    <option value="">Select a hostel</option>
-                    {hostels.map((hostel) => (
-                      <option key={hostel.id} value={hostel.name}>
-                        {hostel.name} (${hostel.pricePerSemester}/semester)
-                      </option>
-                    ))}
-                  </select>
+                </FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a hostel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map((hostel) => (
+                        <SelectItem key={hostel.id} value={hostel.name}>
+                          {hostel.name} (${hostel.pricePerSemester}/semester)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>

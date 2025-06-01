@@ -1,17 +1,12 @@
-import { useState, useEffect } from "react";
-import { User } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import {
-  onAuthStateChanged,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { useState, useEffect } from 'react'; 
+import { User } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
-type UserRole = "user" | "admin" | null;
+type UserRole = 'user' | 'admin' | null;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,7 +19,7 @@ export function useAuth() {
       setUser(user);
       if (user) {
         try {
-          const userRef = doc(db, "users", user.uid);
+          const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const userRole = userSnap.data().role as UserRole;
@@ -33,16 +28,16 @@ export function useAuth() {
             await setDoc(userRef, {
               displayName: user.displayName,
               email: user.email,
-              role: "user",
+              role: 'user',
               createdAt: new Date().toISOString(),
             });
-            setRole("user");
-            toast.success("Welcome to your new account!");
+            setRole('user');
+            toast.success('Welcome to your new account!');
           }
         } catch (error) {
-          console.error("Error fetching or creating user:", error);
+          console.error('Error fetching or creating user:', error);
           setRole(null);
-          toast.error("Error setting up user account");
+          toast.error('Error setting up user account');
         }
       } else {
         setRole(null);
@@ -53,46 +48,46 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async ({ part }: { part: "1" | "other" }) => {
+  const signIn = async () => {
     const provider = new GoogleAuthProvider();
-    if (part === "other") {
-      provider.setCustomParameters({
-        hd: "hit.ac.zw",
-      });
-    }
+    //  provider.setCustomParameters({
+    //    hd: 'hit.ac.zw',
+    //  });
+
+
 
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
       if (user) {
-        const userRef = doc(db, "users", user.uid);
-        let userRole: UserRole = "user";
+        const userRef = doc(db, 'users', user.uid);
+        let userRole: UserRole = 'user';
 
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           userRole = userSnap.data().role as UserRole;
-          toast.success("Successfully logged in!");
+          toast.success('Successfully logged in!');
         } else {
           await setDoc(userRef, {
             displayName: user.displayName,
             email: user.email,
-            role: "user",
+            role: 'user',
             createdAt: new Date().toISOString(),
           });
-          toast.success("Welcome to your new account!");
+          toast.success('Welcome to your new account!');
         }
 
         setRole(userRole);
-        if (userRole === "admin") {
-          router.push("/admin");
+        if (userRole === 'admin') {
+          router.push('/admin');
         } else {
-          router.push("/student/profile");
+          router.push('/student/profile');
         }
       }
     } catch (error) {
-      console.error("Error signing in with Google", error);
-      toast.error("Failed to sign in with Google");
+      console.error('Error signing in with Google', error);
+      toast.error('Failed to sign in with Google');
     }
   };
 
@@ -100,11 +95,11 @@ export function useAuth() {
     try {
       await signOut(auth);
       setRole(null);
-      router.push("/");
-      toast.success("Successfully signed out");
+      router.push('/');
+      toast.success('Successfully signed out');
     } catch (error) {
-      console.error("Error signing out", error);
-      toast.error("Failed to sign out");
+      console.error('Error signing out', error);
+      toast.error('Failed to sign out');
     }
   };
 
