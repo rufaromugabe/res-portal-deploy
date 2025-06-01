@@ -257,98 +257,94 @@ const AdminPaymentManagement: React.FC = () => {
       </div>
     );
   }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-2 sm:p-4 lg:p-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Total Payments</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.total}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-500" />
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-lg sm:text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
-              <Clock className="w-8 h-8 text-yellow-500" />
+              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Approved</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Rejected</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-600">{stats.rejected}</p>
               </div>
-              <XCircle className="w-8 h-8 text-red-500" />
+              <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card className="col-span-2 md:col-span-1">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                <p className="text-2xl font-bold text-green-600">${stats.totalAmount}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Total Amount</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">${stats.totalAmount}</p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
+              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <Tabs defaultValue="all" className="w-full">
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="all">All Payments</TabsTrigger>
-            <TabsTrigger value="pending">
+      </div>      <Tabs defaultValue="all" className="w-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="all" className="flex-1 sm:flex-none">All Payments</TabsTrigger>
+            <TabsTrigger value="pending" className="flex-1 sm:flex-none">
               Pending ({stats.pending})
             </TabsTrigger>
           </TabsList>
           <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Payment
               </Button>
             </DialogTrigger>
           </Dialog>
-        </div>
-
-        <TabsContent value="all" className="space-y-4">
+        </div>        <TabsContent value="all" className="space-y-4">
           {/* Filters */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
                 placeholder="Search by student reg number or receipt number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
               />
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -360,8 +356,8 @@ const AdminPaymentManagement: React.FC = () => {
             </Select>
           </div>
 
-          {/* Payments Table */}
-          <Card>
+          {/* Payments Table - Desktop */}
+          <Card className="hidden lg:block">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -414,9 +410,63 @@ const AdminPaymentManagement: React.FC = () => {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="pending" className="space-y-4">
+          {/* Payments Cards - Mobile */}
+          <div className="lg:hidden space-y-4">
+            {filteredPayments.map((payment) => (
+              <Card key={payment.id}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{payment.studentRegNumber}</p>
+                        <p className="text-sm text-gray-600">Receipt: {payment.receiptNumber}</p>
+                      </div>
+                      {getStatusBadge(payment.status)}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Amount</p>
+                        <p className="font-medium">${payment.amount}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Method</p>
+                        <p className="font-medium">{payment.paymentMethod}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600">
+                      Submitted: {new Date(payment.submittedAt).toLocaleDateString()}
+                    </div>
+                    
+                    {payment.status === 'Pending' && (
+                      <div className="flex gap-2 pt-2 border-t">
+                        <Button
+                          size="sm"
+                          onClick={() => openApproveDialog(payment)}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => openRejectDialog(payment)}
+                          className="flex-1"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>        <TabsContent value="pending" className="space-y-4">
           {pendingPayments.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -429,27 +479,27 @@ const AdminPaymentManagement: React.FC = () => {
               {pendingPayments.map((payment) => (
                 <Card key={payment.id} className="border-yellow-200">
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                           <span className="font-medium">Student: {payment.studentRegNumber}</span>
                           {getStatusBadge(payment.status)}
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Receipt: {payment.receiptNumber} | Amount: ${payment.amount}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Method: {payment.paymentMethod} | Submitted: {new Date(payment.submittedAt).toLocaleDateString()}
-                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                          <p>Receipt: {payment.receiptNumber}</p>
+                          <p>Amount: ${payment.amount}</p>
+                          <p>Method: {payment.paymentMethod}</p>
+                          <p>Submitted: {new Date(payment.submittedAt).toLocaleDateString()}</p>
+                        </div>
                         {payment.notes && (
                           <p className="text-sm text-gray-600">Notes: {payment.notes}</p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-row lg:flex-col xl:flex-row gap-2 w-full sm:w-auto">
                         <Button
                           size="sm"
                           onClick={() => openApproveDialog(payment)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
                         >
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Approve
@@ -458,6 +508,7 @@ const AdminPaymentManagement: React.FC = () => {
                           size="sm"
                           variant="destructive"
                           onClick={() => openRejectDialog(payment)}
+                          className="flex-1 sm:flex-none"
                         >
                           <XCircle className="w-4 h-4 mr-1" />
                           Reject
@@ -472,7 +523,7 @@ const AdminPaymentManagement: React.FC = () => {
         </TabsContent>
       </Tabs>      {/* Approve Payment Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md w-[90vw] max-h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>Approve Payment</DialogTitle>
             <DialogDescription>
@@ -481,7 +532,7 @@ const AdminPaymentManagement: React.FC = () => {
           </DialogHeader>
           {selectedPayment && (
             <div className="space-y-4 flex-1 overflow-y-auto">
-              <div className="bg-gray-50 p-4 rounded">
+              <div className="bg-gray-50 p-4 rounded space-y-2">
                 <p><strong>Student:</strong> {selectedPayment.studentRegNumber}</p>
                 <p><strong>Receipt Number:</strong> {selectedPayment.receiptNumber}</p>
                 <p><strong>Amount:</strong> ${selectedPayment.amount}</p>
@@ -490,20 +541,22 @@ const AdminPaymentManagement: React.FC = () => {
                   <p><strong>Notes:</strong> {selectedPayment.notes}</p>
                 )}
               </div>
-              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
-                <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t flex-shrink-0">
+                <Button variant="outline" onClick={() => setApproveDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button onClick={handleApprovePayment} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={handleApprovePayment} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                   Approve Payment
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
-      </Dialog>{/* Reject Payment Dialog */}
+      </Dialog>
+
+      {/* Reject Payment Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md w-[90vw] max-h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>Reject Payment</DialogTitle>
             <DialogDescription>
@@ -512,7 +565,7 @@ const AdminPaymentManagement: React.FC = () => {
           </DialogHeader>
           {selectedPayment && (
             <div className="space-y-4 flex-1 overflow-y-auto">
-              <div className="bg-gray-50 p-4 rounded">
+              <div className="bg-gray-50 p-4 rounded space-y-2">
                 <p><strong>Student:</strong> {selectedPayment.studentRegNumber}</p>
                 <p><strong>Receipt Number:</strong> {selectedPayment.receiptNumber}</p>
                 <p><strong>Amount:</strong> ${selectedPayment.amount}</p>
@@ -524,16 +577,18 @@ const AdminPaymentManagement: React.FC = () => {
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Explain why this payment is being rejected..."
+                  className="min-h-[100px]"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
-                <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t flex-shrink-0">
+                <Button variant="outline" onClick={() => setRejectDialogOpen(false)} className="w-full sm:w-auto">
                   Cancel
                 </Button>
                 <Button 
                   variant="destructive" 
                   onClick={handleRejectPayment}
                   disabled={!rejectionReason.trim()}
+                  className="w-full sm:w-auto"
                 >
                   Reject Payment
                 </Button>
@@ -541,9 +596,11 @@ const AdminPaymentManagement: React.FC = () => {
             </div>
           )}
         </DialogContent>
-      </Dialog>{/* Add Payment Dialog */}
+      </Dialog>
+
+      {/* Add Payment Dialog */}
       <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md w-[90vw] max-h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>Add Payment</DialogTitle>
             <DialogDescription>

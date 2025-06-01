@@ -107,14 +107,24 @@ const AdminHostelManagement: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     try {
       const [hostelData, settingsData] = await Promise.all([
         fetchHostels(),
         fetchHostelSettings()
       ]);
-      setHostels(hostelData);
+        // Calculate current occupancy and total capacity for each hostel
+      const hostelsWithOccupancy = hostelData.map(hostel => ({
+        ...hostel,
+        totalCapacity: hostel.floors.reduce((total, floor) => 
+          total + floor.rooms.reduce((floorTotal, room) => floorTotal + room.capacity, 0), 0
+        ),
+        currentOccupancy: hostel.floors.reduce((total, floor) => 
+          total + floor.rooms.reduce((floorTotal, room) => floorTotal + room.occupants.length, 0), 0
+        )
+      }));
+      
+      setHostels(hostelsWithOccupancy);
       setSettings(settingsData);
     } catch (error) {
       toast.error('Failed to load data');
@@ -638,32 +648,32 @@ const AdminHostelManagement: React.FC = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
-  }
-
-  return (
-    <div className="w-full h-full bg-white p-8 rounded-lg shadow-sm overflow-auto">
+  }  return (
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b bg-white">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Hostel Management</h2>
-          <p className="text-gray-600">Manage hostels, rooms, and allocations</p>
-        </div>
-        <div className="flex gap-2">
+      <div className="border-b border-gray-200 bg-white">
+        <div className="p-2 sm:p-4 lg:px-6 lg:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Hostel Management</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage hostels, rooms, and allocations</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
           <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            </DialogTrigger>            <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Hostel Settings</DialogTitle>
                 <DialogDescription>
                   Configure global hostel management settings
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">                <div>
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
                   <Label htmlFor="gracePeriod">Payment Grace Period (hours)</Label>
                   <Input
                     id="gracePeriod"
@@ -713,27 +723,32 @@ const AdminHostelManagement: React.FC = () => {
                     })}
                   />
                   <Label htmlFor="mixedGender">Allow mixed gender rooms</Label>
-                </div>                <Button onClick={handleUpdateSettings} className="w-full">
-                  Update Settings
-                </Button>
-                <Button 
-                  onClick={handleCheckPaymentDeadlines} 
-                  variant="outline" 
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Checking...' : 'Check Payment Deadlines Now'}
-                </Button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={handleUpdateSettings} className="flex-1">
+                    Update Settings
+                  </Button>
+                  <Button 
+                    onClick={handleCheckPaymentDeadlines} 
+                    variant="outline" 
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    {loading ? 'Checking...' : 'Check Payment Deadlines Now'}
+                  </Button>
+                </div>
               </div>
             </DialogContent>
-          </Dialog>          <Dialog open={isAddRoomsDialogOpen} onOpenChange={setIsAddRoomsDialogOpen}>
+          </Dialog>
+
+          <Dialog open={isAddRoomsDialogOpen} onOpenChange={setIsAddRoomsDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Bed className="w-4 h-4 mr-2" />
                 Add Rooms
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Rooms in Range</DialogTitle>
                 <DialogDescription>
@@ -874,7 +889,7 @@ const AdminHostelManagement: React.FC = () => {
                 Add Floor
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Floor</DialogTitle>
                 <DialogDescription>
@@ -932,7 +947,7 @@ const AdminHostelManagement: React.FC = () => {
                 Add Hostel
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Hostel</DialogTitle>
                 <DialogDescription>
@@ -990,45 +1005,46 @@ const AdminHostelManagement: React.FC = () => {
                   />
                 </div>
                 <Button onClick={handleCreateHostel} className="w-full">
-                  Create Hostel
-                </Button>
+                  Create Hostel                </Button>
               </div>
             </DialogContent>
-          </Dialog>        </div>
+          </Dialog>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 lg:p-6">
         {/* Hostels Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {hostels.map((hostel) => (
           <Card key={hostel.id} className={hostel.isActive ? '' : 'opacity-60'}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{hostel.name}</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{hostel.name}</CardTitle>
                 <Badge variant={hostel.isActive ? 'default' : 'secondary'}>
                   {hostel.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              <CardDescription>{hostel.description}</CardDescription>
+              <CardDescription className="text-sm">{hostel.description}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-gray-500" />
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Building className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                     <span>Capacity: {hostel.totalCapacity}</span>
+                  </div>                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                    <span>Occupied: {hostel.currentOccupancy}/{hostel.totalCapacity}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-500" />
-                    <span>Occupied: {hostel.currentOccupancy}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                     <span>${hostel.pricePerSemester}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                     <span>{hostel.floors.length} floors</span>
                   </div>
                 </div>
@@ -1041,29 +1057,34 @@ const AdminHostelManagement: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setSelectedHostel(hostel)}
+                    className="flex-1"
                   >
                     <Eye className="w-4 h-4 mr-1" />
                     View Rooms
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleToggleHostelStatus(hostel)}
-                  >
-                    {hostel.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteHostel(hostel.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleHostelStatus(hostel)}
+                      className="flex-1"
+                    >
+                      {hostel.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteHostel(hostel.id)}
+                      className="flex-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1088,16 +1109,16 @@ const AdminHostelManagement: React.FC = () => {
 
       {/* Room Management Modal */}
       {selectedHostel && (
-        <Dialog open={!!selectedHostel} onOpenChange={() => setSelectedHostel(null)}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader className="flex-shrink-0">
-              <div className="flex items-center justify-between">
+        <Dialog open={!!selectedHostel} onOpenChange={() => setSelectedHostel(null)}>          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <DialogTitle>{selectedHostel.name} - Room Management</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-lg sm:text-xl">{selectedHostel.name} - Room Management</DialogTitle>
+                  <DialogDescription className="text-sm">
                     Manage individual rooms, capacity, and reservations
                   </DialogDescription>
-                </div>                <div className="flex gap-2">
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {bulkActionMode && selectedOccupants.size > 0 && (
                     <Button 
                       variant="destructive" 
@@ -1105,7 +1126,8 @@ const AdminHostelManagement: React.FC = () => {
                       onClick={handleBulkRemoveOccupants}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      Remove {selectedOccupants.size} Selected
+                      <span className="hidden sm:inline">Remove {selectedOccupants.size} Selected</span>
+                      <span className="sm:hidden">Remove ({selectedOccupants.size})</span>
                     </Button>
                   )}
                   <Button 
@@ -1117,7 +1139,8 @@ const AdminHostelManagement: React.FC = () => {
                     }}
                   >
                     <Users className="w-4 h-4 mr-1" />
-                    {bulkActionMode ? 'Exit Bulk Mode' : 'Bulk Actions'}
+                    <span className="hidden sm:inline">{bulkActionMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
+                    <span className="sm:hidden">{bulkActionMode ? 'Exit' : 'Bulk'}</span>
                   </Button>
                   <Button 
                     variant="outline" 
@@ -1128,7 +1151,8 @@ const AdminHostelManagement: React.FC = () => {
                     }}
                   >
                     <Bed className="w-4 h-4 mr-1" />
-                    Add Rooms
+                    <span className="hidden sm:inline">Add Rooms</span>
+                    <span className="sm:hidden">Rooms</span>
                   </Button>
                   <Button 
                     variant="outline" 
@@ -1139,47 +1163,46 @@ const AdminHostelManagement: React.FC = () => {
                     }}
                   >
                     <Building className="w-4 h-4 mr-1" />
-                    Add Floor
+                    <span className="hidden sm:inline">Add Floor</span>
+                    <span className="sm:hidden">Floor</span>
                   </Button>
                 </div>
               </div>
             </DialogHeader>
-            
-            <div className="space-y-6 flex-1 overflow-y-auto pr-2">              {selectedHostel.floors.map((floor) => (
-                <div key={floor.id} className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="text-lg font-semibold">{floor.name}</h3>
-                    <Button
+              <div className="space-y-4 sm:space-y-6 flex-1 overflow-y-auto px-1 sm:pr-2">
+              {selectedHostel.floors.map((floor) => (
+                <div key={floor.id} className="space-y-3 sm:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
+                    <h3 className="text-base sm:text-lg font-semibold">{floor.name}</h3>                    <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleRemoveFloor(selectedHostel.id, floor.id, floor.name)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-fit text-xs sm:text-sm"
                       disabled={floor.rooms.some(room => room.occupants.length > 0)}
                       title={floor.rooms.some(room => room.occupants.length > 0) ? "Cannot remove floor with occupied rooms" : `Remove floor "${floor.name}"`}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      Remove Floor
+                      <span className="hidden sm:inline">Remove Floor</span>
+                      <span className="sm:hidden">Remove</span>
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {floor.rooms.map((room) => (
-                      <Card key={room.id} className={getRoomStatusColor(room)}>
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
+                      <Card key={room.id} className={getRoomStatusColor(room)}>                        <CardContent className="p-2 sm:p-3">
+                          <div className="space-y-2 sm:space-y-3">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-semibold">Room {room.number}</h4>
+                              <h4 className="font-semibold text-sm sm:text-base">Room {room.number}</h4>
                               {getRoomStatusIcon(room)}
                             </div>
                             
-                            <div className="space-y-2 text-sm">
+                            <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                               <div className="flex items-center justify-between">
-                                <span>Capacity:</span>
-                                <Input
+                                <span>Capacity:</span>                                <Input
                                   type="number"
                                   value={room.capacity}
                                   onChange={(e) => handleUpdateRoomCapacity(selectedHostel, room.id, e.target.value)}
-                                  className="w-16 h-6 text-xs"
+                                  className="w-10 sm:w-12 h-5 sm:h-6 text-xs"
                                   min="1"
                                   max={settings.maxRoomCapacity}
                                 />
@@ -1189,65 +1212,70 @@ const AdminHostelManagement: React.FC = () => {
                                 <span>{room.occupants.length}</span>
                               </div>
                               {room.isReserved && (
-                                <div className="text-yellow-600">
+                                <div className="text-yellow-600 text-xs">
                                   <p>Reserved by: {room.reservedBy}</p>
                                   <p>Until: {room.reservedUntil ? new Date(room.reservedUntil).toLocaleDateString() : 'N/A'}</p>
                                 </div>
                               )}
                             </div>
+                              <div className="flex flex-col gap-1">
                               <div className="flex gap-1">
-                              {room.isReserved ? (
+                                {room.isReserved ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleUnreserveRoom(room.id, selectedHostel.id)}
+                                    className="flex-1 text-xs h-7"
+                                  >
+                                    <Unlock className="w-3 h-3 mr-1" />
+                                    <span className="hidden sm:inline">Unreserve</span>
+                                    <span className="sm:hidden">Unres.</span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleReserveRoom(room.id, selectedHostel.id)}
+                                    className="flex-1 text-xs h-7"
+                                  >
+                                    <Lock className="w-3 h-3 mr-1" />
+                                    <span className="hidden sm:inline">Reserve</span>
+                                    <span className="sm:hidden">Res.</span>
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleUnreserveRoom(room.id, selectedHostel.id)}
-                                  className="flex-1"
+                                  onClick={() => handleRemoveRoom(selectedHostel.id, room.id, room.number)}
+                                  className="px-2 h-7"
+                                  disabled={room.occupants.length > 0}
+                                  title={room.occupants.length > 0 ? "Cannot remove occupied room" : "Remove room"}
                                 >
-                                  <Unlock className="w-3 h-3 mr-1" />
-                                  Unreserve
+                                  <Trash2 className="w-3 h-3" />
                                 </Button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleReserveRoom(room.id, selectedHostel.id)}
-                                  className="flex-1"
-                                >
-                                  <Lock className="w-3 h-3 mr-1" />
-                                  Reserve
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRemoveRoom(selectedHostel.id, room.id, room.number)}
-                                className="px-2"
-                                disabled={room.occupants.length > 0}
-                                title={room.occupants.length > 0 ? "Cannot remove occupied room" : "Remove room"}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>                              {room.occupants.length > 0 && (
-                              <div className="pt-3 border-t border-gray-200">
-                                <div className="flex items-center justify-between mb-2">
+                              </div>
+                            </div>
+
+                            {room.occupants.length > 0 && (                              <div className="pt-2 sm:pt-3 border-t border-gray-200">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                                   <p className="text-xs font-semibold text-gray-700">Occupants ({room.occupants.length}/{room.capacity})</p>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 sm:gap-2">
                                     {bulkActionMode && room.occupants.length > 0 && (
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => selectAllOccupantsInRoom(room.id, room.occupants)}
-                                        className="h-6 text-xs px-2"
+                                        className="h-5 sm:h-6 text-xs px-1 sm:px-2"
                                       >
-                                        Select All
+                                        <span className="hidden sm:inline">Select All</span>
+                                        <span className="sm:hidden">All</span>
                                       </Button>
                                     )}
-                                    <Badge variant="outline" className="text-xs">
-                                      {room.capacity - room.occupants.length} space{room.capacity - room.occupants.length !== 1 ? 's' : ''} left
+                                    <Badge variant="outline" className="text-xs px-1 py-0">
+                                      {room.capacity - room.occupants.length} left
                                     </Badge>
                                   </div>
-                                </div>
-                                <div className="space-y-2">
+                                </div>                                <div className="space-y-1 sm:space-y-2">
                                   {room.occupants.map((regNumber, index) => {
                                     const occupantKey = `${room.id}-${regNumber}`;
                                     const isRemoving = removingOccupant === occupantKey;
@@ -1256,42 +1284,41 @@ const AdminHostelManagement: React.FC = () => {
                                     return (
                                       <div 
                                         key={index} 
-                                        className={`flex items-center justify-between p-2 rounded-md border transition-colors ${
+                                        className={`flex items-center justify-between p-1.5 sm:p-2 rounded-md border transition-colors ${
                                           isSelected 
                                             ? 'bg-blue-50 border-blue-200' 
                                             : 'bg-gray-50 border-gray-200'
                                         } ${bulkActionMode ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                                         onClick={bulkActionMode ? () => toggleOccupantSelection(room.id, regNumber) : undefined}
                                       >
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                                           {bulkActionMode && (
                                             <input
                                               type="checkbox"
                                               checked={isSelected}
                                               onChange={() => toggleOccupantSelection(room.id, regNumber)}
-                                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
                                               onClick={(e) => e.stopPropagation()}
                                             />
                                           )}
-                                          <div className={`w-2 h-2 rounded-full ${isRemoving ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
-                                          <span className="text-xs font-medium text-gray-900">{regNumber}</span>
+                                          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${isRemoving ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
+                                          <span className="text-xs font-medium text-gray-900 truncate">{regNumber}</span>
                                           {isRemoving && (
-                                            <span className="text-xs text-yellow-600 italic">Removing...</span>
+                                            <span className="text-xs text-yellow-600 italic hidden sm:inline">Removing...</span>
                                           )}
-                                        </div>
-                                        {!bulkActionMode && (
+                                        </div>                                        {!bulkActionMode && (
                                           <Button
                                             size="sm"
                                             variant="ghost"
                                             onClick={() => handleRemoveOccupant(selectedHostel, room.id, regNumber)}
-                                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                                             title={`Remove ${regNumber} from room`}
                                             disabled={isRemoving}
                                           >
                                             {isRemoving ? (
-                                              <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
+                                              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
                                             ) : (
-                                              <XCircle className="w-4 h-4" />
+                                              <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                                             )}
                                           </Button>
                                         )}
@@ -1309,7 +1336,8 @@ const AdminHostelManagement: React.FC = () => {
                 </div>
               ))}
             </div>
-          </DialogContent>        </Dialog>
+          </DialogContent>
+        </Dialog>
       )}
       
       {/* Confirmation Dialog */}

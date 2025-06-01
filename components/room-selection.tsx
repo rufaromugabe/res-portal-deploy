@@ -456,10 +456,9 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4 text-gray-500" />
                       <span>Capacity: {hostel.totalCapacity}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    </div>                    <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-gray-500" />
-                      <span>Occupied: {hostel.currentOccupancy}</span>
+                      <span>Occupied: {hostel.currentOccupancy}/{hostel.totalCapacity}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-gray-500" />
