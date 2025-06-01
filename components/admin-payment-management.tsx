@@ -32,6 +32,7 @@ import {
 } from '@/data/payment-data';
 import { fetchStudentAllocations, getRoomDetailsFromAllocation } from '@/data/hostel-data';
 import { Payment, RoomAllocation } from '@/types/hostel';
+import BankingDetails from '@/components/banking-details';
 
 const AdminPaymentManagement: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -686,8 +687,7 @@ const AdminPaymentManagement: React.FC = () => {
                   : "Amount is automatically calculated based on the student's room allocation"
                 }
               </p>
-            </div>
-            <div>
+            </div>            <div>
               <Label htmlFor="paymentMethod">Payment Method</Label>
               <Select
                 value={addPaymentForm.paymentMethod}
@@ -705,6 +705,11 @@ const AdminPaymentManagement: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Show banking details when Bank Transfer is selected */}
+            {addPaymentForm.paymentMethod === 'Bank Transfer' && (
+              <BankingDetails variant="alert" className="my-4" />
+            )}
             <div>
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea

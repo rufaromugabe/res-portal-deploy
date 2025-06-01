@@ -16,6 +16,7 @@ import { fetchStudentAllocations } from "@/data/hostel-data";
 import { addAdminPayment } from "@/data/payment-data";
 import { getAuth } from "firebase/auth";
 import { Payment } from "@/types/hostel";
+import BankingDetails from "@/components/banking-details";
 
 interface PaymentStatusModalProps {
   isOpen: boolean;
@@ -196,8 +197,7 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
                   onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
                   placeholder="Enter payment amount"
                 />
-              </div>
-              <div>
+              </div>              <div>
                 <Label htmlFor="paymentMethod">Payment Method</Label>
                 <Select
                   value={paymentForm.paymentMethod}
@@ -215,6 +215,12 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Show banking details when Bank Transfer is selected */}
+              {paymentForm.paymentMethod === 'Bank Transfer' && (
+                <BankingDetails variant="alert" className="my-4" />
+              )}
+              
               <div>
                 <Label htmlFor="notes">Notes (Optional)</Label>
                 <Textarea

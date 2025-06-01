@@ -21,6 +21,7 @@ import {
 } from '@/data/payment-data';
 import { fetchStudentAllocations, getRoomDetailsFromAllocation, fetchAllocationById } from '@/data/hostel-data';
 import { Payment, RoomAllocation } from '@/types/hostel';
+import BankingDetails from '@/components/banking-details';
 
 interface StudentPaymentManagementProps {
   studentRegNumber?: string;
@@ -473,8 +474,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
               <p className="text-xs text-gray-500 mt-1">
                 Amount is automatically set based on your room allocation
               </p>
-            </div>
-            <div>
+            </div>            <div>
               <Label htmlFor="paymentMethod">Payment Method</Label>
               <Select
                 value={formData.paymentMethod}
@@ -492,6 +492,11 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Show banking details when Bank Transfer is selected */}
+            {formData.paymentMethod === 'Bank Transfer' && (
+              <BankingDetails variant="alert" className="my-4" />
+            )}
             <div>
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea
@@ -531,8 +536,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                 onChange={(e) => setFormData({...formData, receiptNumber: e.target.value})}
                 placeholder="Enter receipt number"
               />
-            </div>
-            <div>
+            </div>            <div>
               <Label htmlFor="editPaymentMethod">Payment Method</Label>
               <Select
                 value={formData.paymentMethod}
@@ -550,6 +554,11 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Show banking details when Bank Transfer is selected */}
+            {formData.paymentMethod === 'Bank Transfer' && (
+              <BankingDetails variant="alert" className="my-4" />
+            )}
             <div>
               <Label htmlFor="editNotes">Notes (Optional)</Label>
               <Textarea
