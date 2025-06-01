@@ -14,6 +14,9 @@ import {
   X,
   Activity,
   Settings,
+  Building,
+  Home,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +68,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     setIsOpen(false); // Close the drawer
     router.push(href); // Navigate to the selected link
   };
-
   const navigationItems = React.useMemo(() => {
     if (!userRole) return [];
 
@@ -74,13 +76,17 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     if (userRole === "user") {
       items.push(
         { title: "Profile", icon: UserRound, href: "/student/profile" },
-        { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" }
+        { title: "Application", icon: SquareArrowOutUpRightIcon, href: "/student/application" },
+        { title: "Room Selection", icon: Home, href: "/student/room-selection" },
+        { title: "Payments", icon: DollarSign, href: "/student/payments" }
       );
     } else if (userRole === "admin") {
       items.push(
         { title: "Accounts", icon: Users, href: "/admin/accounts" },
         { title: "Applications", icon: Inbox, href: "/admin/applications" },
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
+        { title: "Hostels", icon: Building, href: "/admin/hostels" },
+        { title: "Payments", icon: DollarSign, href: "/admin/payments" },
         { title: "Archived", icon: Archive, href: "/admin/archived" },
         { title: "Activity logs", icon: Activity, href: "/admin/logs" },
         {title: "Settings", icon: Settings, href: "/admin/settings"}
@@ -88,7 +94,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     }
 
     // Common items
-    items.push({ title: "Published", icon: CloudUpload, href: "/accepted-students" });
+    // items.push({ title: "Published", icon: CloudUpload, href: "/accepted-students" });
 
     return items;
   }, [userRole]);
@@ -110,7 +116,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         </Button>
 
         {/* App Title */}
-        <h1 className="ml-4 text-xl font-semibold">REZ Portal</h1>
+        <h1 className="ml-4 text-xl font-semibold">Res Portal</h1>
 
         {/* Right side - Placeholder */}
         <div className="ml-auto flex items-center space-x-4">

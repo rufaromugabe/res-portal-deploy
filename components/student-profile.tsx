@@ -400,13 +400,12 @@ const StudentProfileForm: React.FC<{}> = () => {
             </CardContent>
           </Card>
         ) : (
-          <>
-            {/* Welcome Header */}
+          <>            {/* Welcome Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-4xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900">
                 Welcome, {authDetails.userName || "Student"}!
               </h1>
-              <p className="text-lg text-gray-600">
+              <p className="text-base md:text-lg text-gray-600">
                 This is your personal dashboard. Keep your information up to date for
                 the best experience.
               </p>
@@ -414,50 +413,51 @@ const StudentProfileForm: React.FC<{}> = () => {
 
         {/* Profile Information Card */}
         <Card>          <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
               <div>
-                <CardTitle className="text-2xl flex items-center">
-                  <User className="w-6 h-6 mr-2 text-blue-600" />
+                <CardTitle className="text-xl md:text-2xl flex items-center">
+                  <User className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
                   Profile Information
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm md:text-base">
                   {isEditing
                     ? "Update your personal information below"
                     : "View your personal information and make changes when needed"}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-y-0 md:gap-3">
                 {!isEditing && (
-                  <Badge variant="secondary" className="flex items-center">
+                  <Badge variant="secondary" className="flex items-center justify-center md:justify-start">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Profile Complete
                   </Badge>
                 )}
-                <div className="flex gap-2">
+                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2">
                   {isEditing && (
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setIsEditing(false)}
+                      className="w-full md:w-auto"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Cancel
+                      <span className="md:inline">Cancel</span>
                     </Button>
                   )}
                   <Button
                     type="button"
                     onClick={handleEditClick}
-                    className={isEditing ? "" : ""}
+                    className="w-full md:w-auto"
                   >
                     {isEditing ? (
                       <>
                         <Save className="w-4 h-4 mr-2" />
-                        Save Changes
+                        <span className="md:inline">Save Changes</span>
                       </>
                     ) : (
                       <>
                         <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
+                        <span className="md:inline">Edit Profile</span>
                       </>
                     )}
                   </Button>
@@ -659,41 +659,39 @@ const StudentProfileForm: React.FC<{}> = () => {
               </form>
             </Form>
           </CardContent>
-        </Card>
-
-        {/* Quick Actions Card */}
+        </Card>        {/* Quick Actions Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Quick Actions</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
+            <CardDescription className="text-sm md:text-base">
               Access the most common features from here
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Button
                 variant="outline"
-                className="h-20 flex flex-col space-y-2"
+                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2"
                 onClick={() => router.push("/student/room-selection")}
               >
-                <BookOpen className="w-6 h-6" />
-                <span>Room Selection</span>
+                <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
+                <span className="text-xs md:text-sm">Room Selection</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex flex-col space-y-2"
+                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2"
                 onClick={() => router.push("/student/payments")}
               >
-                <GraduationCap className="w-6 h-6" />
-                <span>View Payments</span>
+                <GraduationCap className="w-5 h-5 md:w-6 md:h-6" />
+                <span className="text-xs md:text-sm">View Payments</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex flex-col space-y-2"
-                onClick={() => router.push("/student/applications")}
+                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2 sm:col-span-2 lg:col-span-1"
+                onClick={() => router.push("/student/application")}
               >
-                <User className="w-6 h-6" />
-                <span>Application Status</span>
+                <User className="w-5 h-5 md:w-6 md:h-6" />
+                <span className="text-xs md:text-sm">Application Status</span>
               </Button>            </div>
           </CardContent>
         </Card>
