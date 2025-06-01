@@ -18,7 +18,7 @@ import { getAuth } from "firebase/auth";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   User,
   Phone,
@@ -26,10 +26,8 @@ import {
   Mail,
   GraduationCap,
   Users,
-  CheckCircle,
-  Search,
+  CheckCircle,  Search,
   ArrowRight,
-  UserCheck,
   Edit,
   Save,
   X,
@@ -37,13 +35,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -108,244 +99,15 @@ const StudentProfileSchema = z.object({
 
 type FormValues = z.infer<typeof StudentProfileSchema>;
 
-const OnboardingModal: React.FC<{
-  isOpen: boolean;
-  userEmail: string;
-  regNumber: string;
-  onComplete: (studentData: Student) => void;
-}> = ({ isOpen, userEmail, regNumber, onComplete }) => {
-  const [step, setStep] = useState(1);
-  const [inputRegNumber, setInputRegNumber] = useState("");
-  const [foundStudent, setFoundStudent] = useState<Student | null>(null);
-  const [error, setError] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const handleRegNumberSubmit = async () => {
-    setIsSearching(true);
-    setError("");
-
-    // Simulate search delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const studentData = findStudentByRegNumber(inputRegNumber);    if (studentData) {
-      // Convert StudentData to Student format for compatibility
-      const student: Student = {
-        email: studentData.email || userEmail, // Use sign-in email if not provided
-        gender: studentData.gender,
-        name: `${studentData.name} ${studentData.surname}`, // Concatenate first name and surname
-        part: studentData.part,
-        phone: studentData.phone || "", // Will be updated by student
-        programme: studentData.programme,
-        regNumber: studentData.regNumber,
-      };
-      setFoundStudent(student);
-      setStep(2);
-    } else {
-      setError("Registration number not found. Please try again.");
-    }
-    setIsSearching(false);
-  };
-
-  const handleConfirmDetails = () => {
-    if (foundStudent) {
-      onComplete(foundStudent);
-    }
-  };
-
-  const stepVariants = {
-    hidden: { opacity: 0, x: 50 },
-    visible: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 },
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-bold">Welcome!</DialogTitle>
-              <DialogDescription className="mt-1">
-                Let's set up your profile to get started
-              </DialogDescription>
-            </div>
-            <div className="flex space-x-2">
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  step >= 1 ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              />
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  step >= 2 ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              />
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Enter Your Registration Number
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    We'll search for your details in our system
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="regNumber"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Registration Number
-                    </Label>
-                    <Input
-                      id="regNumber"
-                      value={inputRegNumber}
-                      onChange={(e) => setInputRegNumber(e.target.value)}
-                      placeholder="Enter your registration number"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200"
-                    >
-                      {error}
-                    </motion.div>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    onClick={handleRegNumberSubmit}
-                    disabled={!inputRegNumber || isSearching}
-                    className="w-full"
-                  >
-                    {isSearching ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Number.POSITIVE_INFINITY,
-                            ease: "linear",
-                          }}
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                        />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        Search <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && foundStudent && (
-              <motion.div
-                key="step2"
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UserCheck className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Confirm Your Details
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Please verify that these details are correct
-                  </p>
-                </div>
-
-                <Card>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium capitalize">
-                        {foundStudent.name}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{foundStudent.email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Phone:</span>
-                      <span className="font-medium">{foundStudent.phone}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Gender:</span>
-                      <span className="font-medium">{foundStudent.gender}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Part:</span>
-                      <span className="font-medium">
-                        Part {foundStudent.part}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Programme:</span>
-                      <span className="font-medium text-sm">
-                        {foundStudent.programme}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(1)}
-                    className="flex-1"
-                  >
-                    Back
-                  </Button>
-                  <Button onClick={handleConfirmDetails} className="flex-1">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Confirm & Save
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+// Onboarding functionality moved inline to main component
 
 const StudentProfileForm: React.FC<{}> = () => {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [inputRegNumber, setInputRegNumber] = useState("");
+  const [onboardingError, setOnboardingError] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [authDetails, setAuthDetails] = useState({
     userName: "",
     userEmail: "",
@@ -379,9 +141,7 @@ const StudentProfileForm: React.FC<{}> = () => {
             userName: user.displayName || "",
             userEmail: user.email || "",
             regNumber,
-          });
-
-          if (emailDomain === "hit.ac.zw") {
+          });          if (emailDomain === "hit.ac.zw") {
             // For hit.ac.zw domain users
             regNumber = user.email?.split("@")[0] || "";
             setAuthDetails((prev) => ({ ...prev, regNumber }));
@@ -399,6 +159,17 @@ const StudentProfileForm: React.FC<{}> = () => {
                 part: data.part,
                 programme: data.programme || "",
               });
+            } else {
+              // No profile exists, enable edit mode and prefill available data
+              form.reset({
+                name: user.displayName || "",
+                phone: "",
+                regNumber: regNumber,
+                gender: "Male",
+                part: "1",
+                programme: "",
+              });
+              setIsEditing(true);
             }
           } else if (emailDomain === "gmail.com" && user.email) {
             // For gmail.com users, first check if they exist in Firebase by email
@@ -422,10 +193,9 @@ const StudentProfileForm: React.FC<{}> = () => {
                 ...prev,
                 userName: userData.name || user.displayName || "",
                 regNumber: userData.regNumber || "",
-              }));
-            } else {
-              // User doesn't exist, show onboarding modal
-              setShowOnboardingModal(true);
+              }));            } else {
+              // User doesn't exist, show onboarding inline
+              setNeedsOnboarding(true);
             }
           }
         }
@@ -438,48 +208,55 @@ const StudentProfileForm: React.FC<{}> = () => {
     };
 
     fetchProfile();
-  }, [form]);
+    }, [form]);
+  const handleRegNumberSubmit = async () => {
+    setIsSearching(true);
+    setOnboardingError("");
 
-  const handleOnboardingComplete = async (studentData: Student) => {
-    try {
-      // Create or update the user in Firebase
-      const userDoc = doc(db, "students", studentData.regNumber);
-      await setDoc(
-        userDoc,
-        {
-          ...studentData,
-          name: studentData.name,
-          email: authDetails.userEmail,
-        },
-        { merge: true }
-      );
+    // Simulate search delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Update form with the student data
-      form.reset({
-        name: studentData.name,
-        phone: studentData.phone,
-        regNumber: studentData.regNumber, // This is correct but may not be updating properly
+    const studentData = findStudentByRegNumber(inputRegNumber);
+    if (studentData) {
+      // Convert StudentData to Student format for compatibility
+      const student: Student = {
+        email: studentData.email || authDetails.userEmail, // Use sign-in email if not provided
         gender: studentData.gender,
+        name: `${studentData.name} ${studentData.surname}`, // Concatenate first name and surname
         part: studentData.part,
+        phone: studentData.phone || "", // Will be updated by student
         programme: studentData.programme,
-      });
-
-      // Update auth details with the registration number
-      setAuthDetails((prev) => ({
-        ...prev,
-        userName: studentData.name,
-        regNumber: studentData.regNumber, // Make sure this is being set
-      }));
-
-      setShowOnboardingModal(false);
-      setIsEditing(true);
-      toast.success(
-        "Profile details saved! You can now edit your information."
-      );
-    } catch (error) {
-      toast.error("Failed to save profile details");
-      console.error(error);
+        regNumber: studentData.regNumber,
+      };
+        // Directly prefill form and show profile page
+      handleOnboardingComplete(student);
+    } else {
+      setOnboardingError("Registration number not found. Please try again.");
     }
+    setIsSearching(false);  };
+  const handleOnboardingComplete = (studentData: Student) => {
+    // Just prefill the form with the student data, don't save to Firebase yet
+    form.reset({
+      name: studentData.name,
+      phone: studentData.phone,
+      regNumber: studentData.regNumber,
+      gender: studentData.gender,
+      part: studentData.part,
+      programme: studentData.programme,
+    });
+
+    // Update auth details with the registration number
+    setAuthDetails((prev) => ({
+      ...prev,
+      userName: studentData.name,
+      regNumber: studentData.regNumber,
+    }));
+
+    setNeedsOnboarding(false);
+    setIsEditing(true);
+    toast.success(
+      "Profile details found and filled! Please review and save your information."
+    );
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -512,9 +289,7 @@ const StudentProfileForm: React.FC<{}> = () => {
     if (isEditing) {
       form.handleSubmit(onSubmit)();
     } else {
-      setIsEditing(true);
-    }
-  };
+      setIsEditing(true);    }  };
 
   if (isLoading) {
     return (
@@ -541,27 +316,101 @@ const StudentProfileForm: React.FC<{}> = () => {
       </div>
     );
   }
-
   return (
     <>
-      <OnboardingModal
-        isOpen={showOnboardingModal}
-        userEmail={authDetails.userEmail}
-        regNumber={authDetails.regNumber}
-        onComplete={handleOnboardingComplete}
-      />
+      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">        {needsOnboarding ? (
+          <Card>
+            <CardHeader>
+              <div className="text-center">
+                <CardTitle className="text-xl font-bold">Welcome!</CardTitle>
+                <CardDescription className="mt-1">
+                  Let's set up your profile to get started
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Enter Your Registration Number
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    We'll search for your details in our system and set up your profile
+                  </p>
+                </div>
 
-      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-        {/* Welcome Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-gray-900">
-            Welcome, {authDetails.userName || "Student"}!
-          </h1>
-          <p className="text-lg text-gray-600">
-            This is your personal dashboard. Keep your information up to date for
-            the best experience.
-          </p>
-        </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label
+                      htmlFor="regNumber"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Registration Number
+                    </Label>
+                    <Input
+                      id="regNumber"
+                      value={inputRegNumber}
+                      onChange={(e) => setInputRegNumber(e.target.value)}
+                      placeholder="Enter your registration number"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {onboardingError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200"
+                    >
+                      {onboardingError}
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={handleRegNumberSubmit}
+                    disabled={!inputRegNumber || isSearching}
+                    className="w-full"
+                  >
+                    {isSearching ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "linear",
+                          }}
+                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                        />
+                        Setting up your profile...
+                      </>
+                    ) : (
+                      <>
+                        Set Up Profile <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Welcome Header */}
+            <div className="text-center space-y-2">
+              <h1 className="text-4xl font-bold text-gray-900">
+                Welcome, {authDetails.userName || "Student"}!
+              </h1>
+              <p className="text-lg text-gray-600">
+                This is your personal dashboard. Keep your information up to date for
+                the best experience.
+              </p>
+            </div>
 
         {/* Profile Information Card */}
         <Card>          <CardHeader>
@@ -845,10 +694,11 @@ const StudentProfileForm: React.FC<{}> = () => {
               >
                 <User className="w-6 h-6" />
                 <span>Application Status</span>
-              </Button>
-            </div>
+              </Button>            </div>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
     </>
   );
