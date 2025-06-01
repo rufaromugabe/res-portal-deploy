@@ -78,7 +78,7 @@ export function AppSidebar() {
         { title: "Accepted", icon: CircleCheck, href: "/admin/accepted" },
         { title: "Hostels", icon: Building, href: "/admin/hostels" },
         { title: "Payments", icon: DollarSign, href: "/admin/payments" },
-        { title: "Archived", icon: Archive, href: "/admin/archived" },
+        // { title: "Archived", icon: Archive, href: "/admin/archived" },
         { title: "Activity logs", icon: Activity, href: "/admin/logs" },
         {title: "Settings", icon: Settings, href: "/admin/settings"}
       );
