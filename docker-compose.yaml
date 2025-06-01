@@ -22,7 +22,7 @@ services:
     depends_on:
       - nextjs
     environment:
-      - API_URL=http://res.hit.ac.zw:3000/api/check-payment-deadlines
+      - API_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}/api/check-payment-deadlines
       - PAYMENT_CHECK_TOKEN=${PAYMENT_CHECK_TOKEN:-default-secure-token}
     restart: always
     command: >
