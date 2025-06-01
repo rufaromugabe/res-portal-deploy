@@ -27,7 +27,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Eye
+  Eye,
+  Database
 } from 'lucide-react';
 import { Hostel, Room, RoomAllocation, HostelSettings } from '@/types/hostel';
 import {
@@ -46,6 +47,7 @@ import {
   removeFloor,
   removeOccupantFromRoom
 } from '@/data/hostel-data';
+import { forceInitializeHostelData } from '@/utils/initialize-hostels';
 import { getAuth } from 'firebase/auth';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
@@ -97,12 +99,14 @@ const AdminHostelManagement: React.FC = () => {
     gender: 'Mixed' as 'Male' | 'Female' | 'Mixed',
     features: ''
   });
-
   const [newFloorForm, setNewFloorForm] = useState({
     hostelId: '',
     floorNumber: '',
     floorName: ''
   });
+  
+  // Initialization state
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -127,9 +131,26 @@ const AdminHostelManagement: React.FC = () => {
       setHostels(hostelsWithOccupancy);
       setSettings(settingsData);
     } catch (error) {
-      toast.error('Failed to load data');
-    } finally {
+      toast.error('Failed to load data');    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManualInitialization = async () => {
+    setIsInitializing(true);
+    try {
+      const result = await forceInitializeHostelData();
+      if (result) {
+        toast.success('Hostel data initialized successfully!');
+        await loadData(); // Reload the data to show the new hostels
+      } else {
+        toast.error('Failed to initialize hostel data');
+      }
+    } catch (error) {
+      console.error('Initialization error:', error);
+      toast.error('Failed to initialize hostel data');
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -736,10 +757,18 @@ const AdminHostelManagement: React.FC = () => {
                   >
                     {loading ? 'Checking...' : 'Check Payment Deadlines Now'}
                   </Button>
-                </div>
-              </div>
+                </div>              </div>
             </DialogContent>
           </Dialog>
+
+          <Button 
+            variant="outline" 
+            onClick={handleManualInitialization}
+            disabled={isInitializing}
+          >
+            <Database className="w-4 h-4 mr-2" />
+            {isInitializing ? 'Initializing...' : 'Initialize Data'}
+          </Button>
 
           <Dialog open={isAddRoomsDialogOpen} onOpenChange={setIsAddRoomsDialogOpen}>
             <DialogTrigger asChild>
