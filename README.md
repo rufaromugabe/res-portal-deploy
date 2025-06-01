@@ -197,19 +197,97 @@ Access the admin panel to configure:
 **Common Issues**:
 
 1. **Firebase Connection Issues**:
-   - Verify environment variables
+   - Verify environment variables in `.env.local`
    - Check Firebase project configuration
-   - Ensure authorized domains are set
+   - Ensure authorized domains are set in Firebase Console
+   - Test Firebase connection: Check browser console for errors
 
-2. **Payment Checker Not Working**:
-   - Check Docker logs: `docker-compose logs payment-checker`
-   - Verify PAYMENT_CHECK_TOKEN matches
-   - Ensure API endpoint is accessible
+2. **Docker Container Issues**:
+   ```bash
+   # Check container status
+   docker ps
+   
+   # View application logs
+   docker logs rez-application
+   
+   # View payment checker logs  
+   docker logs rez-payment-checker
+   
+   # Restart containers if needed
+   docker-compose restart
+   ```
 
-3. **Authentication Problems**:
+3. **Payment Checker Not Working**:
+   ```bash
+   # Check if payment checker is running
+   docker logs rez-payment-checker
+   
+   # Verify environment variables
+   docker exec rez-payment-checker env | grep -E "(API_URL|PAYMENT_CHECK_TOKEN)"
+   
+   # Test API endpoint manually
+   curl -X POST -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" http://localhost:3001/api/check-payment-deadlines
+   ```
+
+4. **Application Not Accessible**:
+   - Verify containers are running: `docker ps`
+   - Check port mapping: Application should be on `localhost:3001`
+   - Check firewall settings if accessing from external network
+   - View container logs for build errors
+
+5. **Authentication Problems**:
    - Verify Firebase Auth configuration
-   - Check user roles in Firestore
-   - Confirm email domain settings
+   - Check user roles in Firestore database
+   - Confirm email domain settings in Firebase
+   - Check browser console for authentication errors
+
+### System Verification
+
+After deployment, verify the system is working correctly:
+
+1. **Application Access**:
+   ```bash
+   # Test application is accessible
+   curl -I http://localhost:3001
+   ```
+
+2. **Container Health**:
+   ```bash
+   # Check all containers are running
+   docker-compose ps
+   
+   # Monitor logs for errors
+   docker-compose logs --tail 50
+   ```
+
+3. **Payment Checker Status**:
+   ```bash
+   # Verify payment checker is scheduled correctly
+   docker exec rez-payment-checker crontab -l
+   
+   # Test API endpoint
+   curl http://localhost:3001/api/check-payment-deadlines
+   ```
+
+4. **Database Connection**:
+   - Login to admin panel
+   - Try creating a test hostel
+   - Verify data appears in Firebase Console
+
+### Performance Monitoring
+
+Monitor system performance:
+
+```bash
+# Container resource usage
+docker stats
+
+# Application logs
+docker-compose logs -f nextjs | grep -E "(error|warning)"
+
+# Payment checker activity
+docker-compose logs -f payment-checker
+```
 
 ## API Endpoints
 

@@ -1,4 +1,5 @@
-version: '3.8'
+# Docker Compose Configuration for HIT Student Accommodation Portal
+# Removed version field as it's obsolete in newer Docker Compose versions
 
 services:
   nextjs:
@@ -9,7 +10,7 @@ services:
       - .:/app
       - /app/node_modules
     ports:
-      -  '3001:3000'
+      - '3001:3000'
     env_file:
       - .env.local
     restart: always
@@ -17,8 +18,9 @@ services:
 
   # Cron service for automated payment deadline checks
   payment-checker:
-    image: curlimages/curl:latest
+    image: alpine:latest
     container_name: rez-payment-checker
+    user: root
     depends_on:
       - nextjs
     environment:
@@ -27,6 +29,10 @@ services:
     restart: always
     command: >
       sh -c "
-        echo '* * * * * curl -X POST -H \"Authorization: Bearer $${PAYMENT_CHECK_TOKEN}\" -H \"Content-Type: application/json\" $${API_URL} >> /var/log/payment-check.log 2>&1' > /etc/crontabs/root &&
-        crond -f
+        apk add --no-cache curl &&
+        mkdir -p /etc/crontabs &&
+        echo '0 */6 * * * curl -X POST -H \"Authorization: Bearer $${PAYMENT_CHECK_TOKEN}\" -H \"Content-Type: application/json\" $${API_URL} >> /var/log/payment-check.log 2>&1' > /etc/crontabs/root &&
+        chmod 0600 /etc/crontabs/root &&
+        echo 'Payment checker cron job scheduled to run every 6 hours' &&
+        crond -f -l 2
       "
