@@ -3,6 +3,17 @@ import { createHostel, fetchHostels } from '../data/hostel-data';
 import { initialHostelData } from '../data/initial-hostel-data';
 
 /**
+ * Check if a hostel with the same name and floor count already exists
+ * This provides additional safety against creating duplicate hostels
+ */
+const isHostelDuplicate = (existingHostels: any[], newHostelData: any): boolean => {
+  return existingHostels.some(existing => 
+    existing.name.toLowerCase() === newHostelData.name.toLowerCase() &&
+    existing.floors.length === newHostelData.floors.length
+  );
+};
+
+/**
  * Check if hostels exist in Firebase and initialize them if they don't
  * This function should be called when the app starts up
  */
@@ -14,13 +25,33 @@ export const checkAndInitializeHostels = async (): Promise<boolean> => {
     const existingHostels = await fetchHostels();
     
     if (existingHostels.length > 0) {
-      console.log(`Found ${existingHostels.length} existing hostel(s). Skipping initialization.`);
+      console.log(`Found ${existingHostels.length} existing hostel(s). Checking for specific hostels...`);
+        // Check if specific hostels from our initial data already exist
+      const hostelsToCreate = initialHostelData.filter(
+        hostelData => !isHostelDuplicate(existingHostels, hostelData)
+      );
+      
+      if (hostelsToCreate.length === 0) {
+        console.log('All initial hostels already exist. Skipping initialization.');
+        return true;
+      }
+      
+      console.log(`Found ${hostelsToCreate.length} new hostel(s) to create...`);
+      
+      // Create only the hostels that don't exist yet
+      for (const hostelData of hostelsToCreate) {
+        console.log(`Creating ${hostelData.name}...`);
+        const hostelId = await createHostel(hostelData);
+        console.log(`✅ Created ${hostelData.name} with ID: ${hostelId}`);
+      }
+      
+      console.log('🎉 New hostel data initialization completed successfully!');
       return true;
     }
     
-    console.log('No hostels found. Initializing hostel data...');
+    console.log('No hostels found. Initializing all hostel data...');
     
-    // Initialize hostels if none exist
+    // Initialize all hostels if none exist
     for (const hostelData of initialHostelData) {
       console.log(`Creating ${hostelData.name}...`);
       const hostelId = await createHostel(hostelData);
@@ -36,14 +67,32 @@ export const checkAndInitializeHostels = async (): Promise<boolean> => {
 };
 
 /**
- * Force initialize hostel data (will create duplicates if hostels already exist)
- * Use this only for testing or when you want to add new hostels
+ * Force initialize hostel data with duplicate prevention
+ * This will only create hostels that don't already exist by name
  */
 export const forceInitializeHostelData = async (): Promise<boolean> => {
   try {
-    console.log('Force initializing hostel data...');
+    console.log('Force initializing hostel data with duplicate prevention...');
     
-    for (const hostelData of initialHostelData) {
+    // Fetch existing hostels to check for duplicates
+    const existingHostels = await fetchHostels();
+    const existingHostelNames = existingHostels.map(h => h.name.toLowerCase());
+    
+    console.log(`Found ${existingHostels.length} existing hostel(s): ${existingHostelNames.join(', ')}`);
+    
+    // Filter out hostels that already exist
+    const hostelsToCreate = initialHostelData.filter(
+      hostelData => !existingHostelNames.includes(hostelData.name.toLowerCase())
+    );
+    
+    if (hostelsToCreate.length === 0) {
+      console.log('All hostels already exist. No new hostels to create.');
+      return true;
+    }
+    
+    console.log(`Creating ${hostelsToCreate.length} new hostel(s)...`);
+    
+    for (const hostelData of hostelsToCreate) {
       console.log(`Creating ${hostelData.name}...`);
       const hostelId = await createHostel(hostelData);
       console.log(`✅ Created ${hostelData.name} with ID: ${hostelId}`);
