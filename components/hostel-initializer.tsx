@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { checkAndInitializeHostels } from '@/utils/initialize-hostels';
 
 /**
@@ -8,12 +8,24 @@ import { checkAndInitializeHostels } from '@/utils/initialize-hostels';
  * This component renders nothing but performs the initialization in the background
  */
 export function HostelInitializer() {
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
+    // Prevent multiple initializations
+    if (hasInitialized.current) {
+      console.log('Hostel initialization already attempted, skipping...');
+      return;
+    }
+
     const initializeHostels = async () => {
       try {
+        hasInitialized.current = true;
+        console.log('Starting hostel initialization...');
         await checkAndInitializeHostels();
       } catch (error) {
         console.error('Failed to initialize hostels:', error);
+        // Reset flag on error so it can be retried
+        hasInitialized.current = false;
       }
     };
 

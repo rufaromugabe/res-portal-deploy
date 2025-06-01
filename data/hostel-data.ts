@@ -57,8 +57,20 @@ export const fetchHostelById = async (hostelId: string): Promise<Hostel | null> 
  */
 export const createHostel = async (hostel: Omit<Hostel, 'id'>): Promise<string> => {
   try {
+    // Final safety check: ensure no hostel with the same name exists
+    const existingHostels = await fetchHostels();
+    const duplicate = existingHostels.find(
+      existing => existing.name.toLowerCase().trim() === hostel.name.toLowerCase().trim()
+    );
+    
+    if (duplicate) {
+      console.log(`Hostel "${hostel.name}" already exists with ID: ${duplicate.id}. Skipping creation.`);
+      return duplicate.id;
+    }
+
     const hostelsCollection = collection(db, "hostels");
     const docRef = await addDoc(hostelsCollection, hostel);
+    console.log(`Successfully created hostel "${hostel.name}" with ID: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
     console.error("Error creating hostel:", error);

@@ -3,15 +3,17 @@ import { createHostel, fetchHostels } from '../data/hostel-data';
 import { initialHostelData } from '../data/initial-hostel-data';
 
 /**
- * Check if a hostel with the same name and floor count already exists
+ * Check if a hostel with the same name already exists
  * This provides additional safety against creating duplicate hostels
  */
 const isHostelDuplicate = (existingHostels: any[], newHostelData: any): boolean => {
   return existingHostels.some(existing => 
-    existing.name.toLowerCase() === newHostelData.name.toLowerCase() &&
-    existing.floors.length === newHostelData.floors.length
+    existing.name.toLowerCase().trim() === newHostelData.name.toLowerCase().trim()
   );
 };
+
+// Global flag to prevent concurrent initializations
+let isInitializing = false;
 
 /**
  * Check if hostels exist in Firebase and initialize them if they don't
@@ -19,6 +21,13 @@ const isHostelDuplicate = (existingHostels: any[], newHostelData: any): boolean 
  */
 export const checkAndInitializeHostels = async (): Promise<boolean> => {
   try {
+    // Prevent concurrent initializations
+    if (isInitializing) {
+      console.log('Hostel initialization already in progress, skipping...');
+      return true;
+    }
+
+    isInitializing = true;
     console.log('Checking for existing hostels in Firebase...');
     
     // Fetch existing hostels
@@ -33,6 +42,7 @@ export const checkAndInitializeHostels = async (): Promise<boolean> => {
       
       if (hostelsToCreate.length === 0) {
         console.log('All initial hostels already exist. Skipping initialization.');
+        isInitializing = false;
         return true;
       }
       
@@ -46,6 +56,7 @@ export const checkAndInitializeHostels = async (): Promise<boolean> => {
       }
       
       console.log('🎉 New hostel data initialization completed successfully!');
+      isInitializing = false;
       return true;
     }
     
@@ -59,9 +70,11 @@ export const checkAndInitializeHostels = async (): Promise<boolean> => {
     }
     
     console.log('🎉 Hostel data initialization completed successfully!');
+    isInitializing = false;
     return true;
   } catch (error) {
     console.error('❌ Error checking/initializing hostel data:', error);
+    isInitializing = false;
     return false;
   }
 };
