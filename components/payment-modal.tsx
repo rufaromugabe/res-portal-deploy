@@ -16,7 +16,6 @@ import { fetchStudentAllocations } from "@/data/hostel-data";
 import { addAdminPayment } from "@/data/payment-data";
 import { getAuth } from "firebase/auth";
 import { Payment } from "@/types/hostel";
-import BankingDetails from "@/components/banking-details";
 
 interface PaymentStatusModalProps {
   isOpen: boolean;
@@ -128,8 +127,7 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
   };
     if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+  return (    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">
           {showAddPayment ? "Add Payment for Student" : "Update Payment Status"}
@@ -213,13 +211,7 @@ const PaymentStatusModal = ({ isOpen, onClose, student, onUpdate }: PaymentStatu
                     <SelectItem value="Card">Card</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Show banking details when Bank Transfer is selected */}
-              {paymentForm.paymentMethod === 'Bank Transfer' && (
-                <BankingDetails variant="alert" className="my-4" />
-              )}
+                </Select>              </div>
               
               <div>
                 <Label htmlFor="notes">Notes (Optional)</Label>

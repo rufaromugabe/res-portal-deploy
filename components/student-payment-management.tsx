@@ -306,9 +306,11 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
       </Card>
     );
   }
-
   return (
     <div className="space-y-6">
+      {/* Banking Details Section */}
+      <BankingDetails variant="card" className="border-blue-200 bg-blue-50/30" />
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -387,7 +389,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                         <div className="flex justify-between items-start">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">Receipt: {payment.receiptNumber}</span>
+                              <span className="font-medium">Receipt/Proof of Payment Ref: {payment.receiptNumber}</span>
                               {getStatusBadge(payment.status)}
                             </div>
                             {roomDetails && (
@@ -454,7 +456,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="receiptNumber">Receipt Number *</Label>
+              <Label htmlFor="receiptNumber">Receipt Number / Proof of Payment *</Label>
               <Input
                 id="receiptNumber"
                 value={formData.receiptNumber}
@@ -490,13 +492,8 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                   <SelectItem value="Card">Card</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
-              </Select>
-            </div>
+              </Select>            </div>
             
-            {/* Show banking details when Bank Transfer is selected */}
-            {formData.paymentMethod === 'Bank Transfer' && (
-              <BankingDetails variant="alert" className="my-4" />
-            )}
             <div>
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea
@@ -529,7 +526,7 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="editReceiptNumber">Receipt Number *</Label>
+              <Label htmlFor="editReceiptNumber">Receipt Number / Proof of Payment *</Label>
               <Input
                 id="editReceiptNumber"
                 value={formData.receiptNumber}
@@ -552,13 +549,8 @@ const StudentPaymentManagement: React.FC<StudentPaymentManagementProps> = ({ stu
                   <SelectItem value="Card">Card</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
-              </Select>
-            </div>
+              </Select>            </div>
             
-            {/* Show banking details when Bank Transfer is selected */}
-            {formData.paymentMethod === 'Bank Transfer' && (
-              <BankingDetails variant="alert" className="my-4" />
-            )}
             <div>
               <Label htmlFor="editNotes">Notes (Optional)</Label>
               <Textarea

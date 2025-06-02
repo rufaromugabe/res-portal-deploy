@@ -173,7 +173,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250560X", name: "MITCHELL", surname: "MUCHENJE", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250584J", name: "TATENDA ADELINE", surname: "MASHURO", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250600E", name: "TINOTENDA ASHLEY", surname: "CHIKASHA", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
-{ regNumber: "H250637M", name: "NYASHADZASHE MAPFUMO", surname: "MAPFUMO", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
+{ regNumber: "H250624T", name: "NYASHADZASHE ", surname: "MAPFUMO", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250656N", name: "ZIMBITI LOSTA-E", surname: "ZIMBITI", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250679A", name: "ANNIE-MARIE MTEKI", surname: "MTEKI", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250686T", name: "KUNDAI KIMBERLY", surname: "SITHOLE", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
@@ -209,7 +209,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250556R", name: "MAKANAKAISHE S MURAHWA", surname: "MURAHWA", gender: "Female", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 { regNumber: "H250570Q", name: "CLARITY", surname: "MUNEMO", gender: "Female", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 { regNumber: "H250616G", name: "TRISH TANAKA", surname: "CHIRENJE", gender: "Female", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
-{ regNumber: "H250623E", name: "TATENDA REBECCA MAUNGANIDZE", surname: "MAUNGANIDZE", gender: "Female", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
+{ regNumber: "H250642W", name: "TATENDA REBECCA MAUNGANIDZE", surname: "MAUNGANIDZE", gender: "Female", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 
 // Bachelor of Technology Honours Degree in Chemical and Process Systems Engineering - MALE
 { regNumber: "H250014R", name: "LASIMODI", surname: "MUNYUKWI", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
@@ -224,7 +224,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250391C", name: "ANOTIDA", surname: "CHIGWADA", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 { regNumber: "H250577Y", name: "TADIWANASHE CHITERA", surname: "CHITERA", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 { regNumber: "H250605J", name: "MALCOM", surname: "MUDIMBA", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
-{ regNumber: "H250624P", name: "WAYNE ANOTIDA", surname: "NYAZIKA", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
+{ regNumber: "H250641T", name: "WAYNE ANOTIDA", surname: "NYAZIKA", gender: "Male", programme: "BTECH_CHEMICAL_ENGINEERING", part: "1" },
 
 // Bachelor of Technology Honours Degree in Computer Science - FEMALE
 { regNumber: "H250006V", name: "CARLTON", surname: "VANGANA", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
@@ -245,7 +245,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250571W", name: "CHARITY TARIRO", surname: "MUJURU", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250576C", name: "RUFARO CHELSEA", surname: "ZIDENGA", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250607W", name: "TARIRO PRECIOUS", surname: "MAVESERE", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
-{ regNumber: "H250625H", name: "ED TAWANANYASHA", surname: "MATAWU", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
+{ regNumber: "H250631A", name: "ED TAWANANYASHA", surname: "MATAWU", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250655C", name: "DADISO", surname: "MONDIWA", gender: "Female", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 
 // Bachelor of Technology Honours Degree in Computer Science - MALE
@@ -277,9 +277,9 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250505V", name: "EMMANUEL", surname: "MAPUVIRE", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250525T", name: "TAWANDA RONALD", surname: "MAKOPE", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250538F", name: "WAYNE TAKUDZWA", surname: "TAIRO", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
-{ regNumber: "H250626A", name: "TANAKA STEVE", surname: "MASUKUME", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
-{ regNumber: "H250631R", name: "JOSEPH", surname: "KUKI", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
-{ regNumber: "H250633Q", name: "KUZIVAKWASHE", surname: "VEVHA", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
+{ regNumber: "H250643V", name: "TANAKA STEVE", surname: "MASUKUME", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
+{ regNumber: "H250634C", name: "JOSEPH", surname: "KUKI", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
+{ regNumber: "H250629H", name: "KUZIVAKWASHE", surname: "VEVHA", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250643J", name: "SHAWN NOKUTENDA", surname: "MUKUSHA", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 { regNumber: "H250652C", name: "KELVIN SINDISO", surname: "MTEMBO", gender: "Male", programme: "BTECH_COMPUTER_SCIENCE", part: "1" },
 
@@ -307,8 +307,8 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250582Y", name: "PORTIA", surname: "MUSONA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
 { regNumber: "H250589H", name: "TANYARADZWA", surname: "TICHIVANGANI", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
 { regNumber: "H250614Y", name: "RUMBIDZAI", surname: "MUSARURWA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
-{ regNumber: "H250635M", name: "TARIRO", surname: "BWONI", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
-{ regNumber: "H250638T", name: "HAILLE DAMITA JO", surname: "CHIWOFFA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
+{ regNumber: "H250628R", name: "TARIRO", surname: "BWONI", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
+{ regNumber: "H250623Y", name: "HAILLE DAMITA ", surname: "CHIWOFFA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
 { regNumber: "H250648J", name: "TANAKA THUBALANI", surname: "NYANDORO", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
 { regNumber: "H250664Q", name: "TRISHA SUSAN", surname: "MUSIYIWA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
 { regNumber: "H250669V", name: "MARGARET", surname: "MASHUMBA", gender: "Female", programme: "BTECH_ELECTRONIC_COMMERCE", part: "1" },
@@ -382,14 +382,14 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250554E", name: "LYKE ADORN", surname: "MUGONEGWA", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250555F", name: "KUDAKWASHE", surname: "MUSWERE", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250568Z", name: "BLESSED", surname: "KABACHI", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
-{ regNumber: "H250644Y", name: "TARUMBIDZWA", surname: "GUNYEKU", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
-{ regNumber: "H250634W", name: "DANAI AWARD", surname: "MUNGAZI", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
+{ regNumber: "H250633C", name: "TARUMBIDZWA", surname: "GUNYEKU", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
+{ regNumber: "H250630N", name: "DANAI AWARD", surname: "MUNGAZI", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250654A", name: "NGONIDZASHE", surname: "GWAMA", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250659J", name: "TALENT TAWONGA", surname: "MATONGO", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250665N", name: "TAPIWANASHE SAMUEL", surname: "CHIBHAGU", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250674N", name: "MUSSA", surname: "CHIKENGEZHA", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250678H", name: "PROSPER", surname: "GONZO", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
-{ regNumber: "H250681H", name: "TAKUDZWA BLESSING", surname: "MARAVANYIKA", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
+{ regNumber: "H250635R", name: "TAKUDZWA BLESSING", surname: "MARAVANYIKA", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 { regNumber: "H250684T", name: "BLESSED", surname: "MUGONI", gender: "Male", programme: "BTECH_ELECTRONIC_ENGINEERING", part: "1" },
 
 // Bachelor of Technology Honours Degree in Financial Engineering - FEMALE
@@ -424,7 +424,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250563Z", name: "BLESSING", surname: "NDOMBI", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250590H", name: "YVETTY NONY", surname: "MARAMBIRE", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250591R", name: "LORRAINE", surname: "ZIOCHA", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
-{ regNumber: "H250622X", name: "KAREN", surname: "JAMES", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
+{ regNumber: "H250626F", name: "KAREN", surname: "JAMES", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250639R", name: "KUZIVAKWASHE CHIKWANA", surname: "CHIKWANA", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250640N", name: "TINOTENDA", surname: "CHARUMA", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 
@@ -587,9 +587,9 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250585P", name: "NOKUTENDA NICOLE", surname: "NYAMHURI", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250588F", name: "TANYARADZWA", surname: "HWERU", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250595R", name: "OLGA TAMARI", surname: "NHENDE", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
-{ regNumber: "H250628Y", name: "RUMBIDZAI SHAMMAH", surname: "SOKISI", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
-{ regNumber: "H250629X", name: "TENDERO ASHLEY", surname: "KACHISI", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
-{ regNumber: "H250630V", name: "MUNASHE", surname: "MUTSERIWA", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
+{ regNumber: "H250639J", name: "RUMBIDZAI SHAMMAH", surname: "SOKISI", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
+{ regNumber: "H250637J", name: "TENDERO ASHLEY", surname: "KACHISI", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
+{ regNumber: "H250636G", name: "MUNASHE", surname: "MUTSERIWA", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250685R", name: "REBECCA", surname: "CHIWENGA", gender: "Female", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 
 // Bachelor of Technology Honours Degree in Information Security and Assurance - MALE
@@ -616,8 +616,8 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250564T", name: "NIGEL TAKUNDA", surname: "NAWU", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250574B", name: "CHRISTWISH DUMISANI", surname: "MANDEYA", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250575Y", name: "MACDONALD TANATSWA", surname: "PAZUWA", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
-{ regNumber: "H250627V", name: "JAPHET", surname: "MHIKE", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
-{ regNumber: "H250632Z", name: "TANAKA NIGEL", surname: "MUTOMBO", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
+{ regNumber: "H250640Q", name: "JAPHET", surname: "MHIKE", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
+{ regNumber: "H250638X", name: "TANAKA NIGEL", surname: "MUTOMBO", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 { regNumber: "H250653R", name: "NICHOLAS", surname: "NDAMBAKUWA", gender: "Male", programme: "BTECH_INFO_SECURITY_ASSURANCE", part: "1" },
 
 // Bachelor of Technology Honours Degree in Information Technology - FEMALE
@@ -773,7 +773,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250549X", name: "TADIWANASHE", surname: "MUNDINGI", gender: "Male", programme: "BTECH_SOFTWARE_ENGINEERING", part: "1" },
 { regNumber: "H250552B", name: "TANYARADZWA T MAFUVA", surname: "MAFUVA", gender: "Male", programme: "BTECH_SOFTWARE_ENGINEERING", part: "1" },
 { regNumber: "H250578T", name: "TREVOR KUDAKWASHE", surname: "CHEMUSANGO", gender: "Male", programme: "BTECH_SOFTWARE_ENGINEERING", part: "1" },
-{ regNumber: "H250636H", name: "WAINWRIGHT TINASHE", surname: "MAHAMBURA", gender: "Male", programme: "BTECH_SOFTWARE_ENGINEERING", part: "1" },
+{ regNumber: "H250621Y", name: "WAINWRIGHT TINASHE", surname: "MAHAMBURA", gender: "Male", programme: "BTECH_SOFTWARE_ENGINEERING", part: "1" },
 ];
 
 // Helper function to find a student by registration number
