@@ -157,6 +157,7 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250688A", name: "RICHARD THANKS", surname: "MAVINGA", gender: "Male", programme: "BTECH_BIOMEDICAL_ENGINEERING", part: "1" },
 
 // Bachelor of Technology Honours Degree in Biotechnology - FEMALE
+{ regNumber: "H250619W", name: "BLESSING", surname: "MARANGWANDA", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250031Q", name: "LYNN MUNASHE TEYA", surname: "TEYA", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250062G", name: "CHIDO NATALIE", surname: "MBERIKWAZVO", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
 { regNumber: "H250176N", name: "KAREN LINDSAY", surname: "MAZANHI", gender: "Female", programme: "BTECH_BIOTECHNOLOGY", part: "1" },
