@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { Room } from '@/types/hostel';
+import { getRoomDetailsFromAllocation } from '@/data/hostel-data';
 
 interface CurrentAllocationCardProps {
   existingAllocation: any;
@@ -29,7 +30,29 @@ const CurrentAllocationCard: React.FC<CurrentAllocationCardProps> = ({
   onChangeRoom,
   loading = false
 }) => {
-  if (!existingAllocation || !allocationRoomDetails) return null;
+  const [roomDetails, setRoomDetails] = useState<any>(allocationRoomDetails);
+  
+  useEffect(() => {
+    // Fetch room details using the same approach as in student-application.tsx
+    const fetchRoomDetails = async () => {
+      if (existingAllocation) {
+        const details = await getRoomDetailsFromAllocation(existingAllocation);
+        if (details) {
+          setRoomDetails({
+            ...details.room,
+            hostelName: details.hostel.name,
+            floorName: details.room.floorName,
+            price: details.price
+          });
+        }
+      }
+    };
+    
+    fetchRoomDetails();
+  }, [existingAllocation]);
+  
+  if (!existingAllocation || !roomDetails) return null;
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Confirmed': return 'bg-green-100 text-green-800';
@@ -38,38 +61,55 @@ const CurrentAllocationCard: React.FC<CurrentAllocationCardProps> = ({
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
+  
   // Helper function to safely parse dates
   const parseDate = (dateValue: any): string => {
     if (!dateValue) return 'Unknown';
     
     try {
+      let date: Date | null = null;
+      
       // Handle Firestore timestamp
       if (dateValue.seconds) {
-        return new Date(dateValue.seconds * 1000).toLocaleDateString();
+        date = new Date(dateValue.seconds * 1000);
       }
-      // Handle ISO string
-      if (typeof dateValue === 'string') {
-        return new Date(dateValue).toLocaleDateString();
+      // Handle ISO string or other date strings
+      else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
       }
       // Handle Date object
-      if (dateValue instanceof Date) {
-        return dateValue.toLocaleDateString();
+      else if (dateValue instanceof Date) {
+        date = dateValue;
       }
       // Handle timestamp number
-      if (typeof dateValue === 'number') {
-        return new Date(dateValue).toLocaleDateString();
+      else if (typeof dateValue === 'number') {
+        date = new Date(dateValue);
+      }
+      
+      // Validate the date and return formatted string
+      if (date && !isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
       }
     } catch (error) {
-      console.error('Error parsing date:', error);
+      console.error('Error parsing date:', error, 'Date value:', dateValue);
     }
     
     return 'Unknown';
   };
+  
   const canChangeRoom = () => {
     if (!hostelSettings) return false;
-    return hostelSettings.allowRoomChanges && existingAllocation.paymentStatus === 'Paid';
+    return hostelSettings.allowRoomChanges;
   };
+
+  // Use allocation date if it exists, otherwise fall back to allocationDate
+  const allocationDate = existingAllocation.allocatedAt || existingAllocation.allocationDate;
 
   return (
     <Card className="border-blue-200 bg-blue-50">
@@ -78,7 +118,8 @@ const CurrentAllocationCard: React.FC<CurrentAllocationCardProps> = ({
           <div>
             <CardTitle className="text-blue-800">Current Room Allocation</CardTitle>
             <CardDescription>Your assigned accommodation details</CardDescription>
-          </div>          <Badge className={getStatusColor(existingAllocation.paymentStatus)}>
+          </div>          
+          <Badge className={getStatusColor(existingAllocation.paymentStatus)}>
             {existingAllocation.paymentStatus}
           </Badge>
         </div>
@@ -90,19 +131,19 @@ const CurrentAllocationCard: React.FC<CurrentAllocationCardProps> = ({
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4 text-blue-600" />
                 <span className="font-medium">Hostel:</span>
-                <span>{allocationRoomDetails.hostelName}</span>
+                <span>{roomDetails.hostelName}</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-600" />
                 <span className="font-medium">Floor:</span>
-                <span>{allocationRoomDetails.floorName}</span>
+                <span>{roomDetails.floorName}</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <Bed className="w-4 h-4 text-blue-600" />
                 <span className="font-medium">Room:</span>
-                <span>{allocationRoomDetails.number}</span>
+                <span>{roomDetails.number}</span>
               </div>
             </div>
             
@@ -110,23 +151,25 @@ const CurrentAllocationCard: React.FC<CurrentAllocationCardProps> = ({
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
                 <span className="font-medium">Capacity:</span>
-                <span>{allocationRoomDetails.capacity} students</span>
+                <span>{roomDetails.capacity} students</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-blue-600" />
                 <span className="font-medium">Price:</span>
-                <span>${existingAllocation.totalCost}</span>
+                <span>${existingAllocation.totalCost || roomDetails.price}</span>
               </div>
-                <div className="flex items-center gap-2">
+              
+              <div className="flex items-center gap-2">
                 <span className="font-medium">Allocated:</span>
-                <span>{parseDate(existingAllocation.allocationDate)}</span>
+                <span>{parseDate(allocationDate)}</span>
               </div>
             </div>
           </div>
           
           {existingAllocation.paymentStatus === 'Pending' && existingAllocation.paymentDeadline && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">              <p className="text-sm text-yellow-800">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">              
+              <p className="text-sm text-yellow-800">
                 <strong>Payment Required:</strong> Complete payment by{' '}
                 {parseDate(existingAllocation.paymentDeadline)}
                 {' '}to confirm your allocation.
