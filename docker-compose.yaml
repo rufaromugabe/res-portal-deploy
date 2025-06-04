@@ -1,9 +1,9 @@
 # Docker Compose Configuration for HIT Student Accommodation Portal
-version: '3.8'
+
 
 services:
   nextjs:
-    image: node:18-alpine
+    image: node:18
     container_name: rez-application
     working_dir: /app
     volumes:
