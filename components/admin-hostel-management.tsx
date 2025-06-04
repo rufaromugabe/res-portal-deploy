@@ -766,15 +766,16 @@ const AdminHostelManagement: React.FC = () => {
         transferStudent.gender,
         true // isAdminAction
       );
-      
-      // Update local state immediately for better UX
+        // Update local state immediately for better UX
       const updatedHostels = hostels.map(hostel => {
         const updatedHostel = { ...hostel };
-          // Remove student from current room
-        if (hostel.id === transferStudent.currentHostel) {
+        
+        // Handle same-hostel transfer (both remove and add in same hostel)
+        if (hostel.id === transferStudent.currentHostel && hostel.id === targetHostel.id) {
           updatedHostel.floors = hostel.floors.map(floor => ({
             ...floor,
             rooms: floor.rooms.map(room => {
+              // Remove student from current room
               if (room.id === transferStudent.currentRoom) {
                 return {
                   ...room,
@@ -782,17 +783,7 @@ const AdminHostelManagement: React.FC = () => {
                   isAvailable: room.occupants.filter(reg => reg !== transferStudent.regNumber).length < room.capacity
                 };
               }
-              return room;
-            })
-          }));
-          updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
-        }
-        
-        // Add student to new room
-        if (hostel.id === targetHostel.id) {
-          updatedHostel.floors = hostel.floors.map(floor => ({
-            ...floor,
-            rooms: floor.rooms.map(room => {
+              // Add student to new room
               if (room.id === selectedTransferRoom.id) {
                 const newOccupants = [...room.occupants, transferStudent.regNumber];
                 return {
@@ -804,7 +795,45 @@ const AdminHostelManagement: React.FC = () => {
               return room;
             })
           }));
-          updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+          // No change in total occupancy for same-hostel transfers
+        } else {
+          // Handle cross-hostel transfer
+          // Remove student from current room
+          if (hostel.id === transferStudent.currentHostel) {
+            updatedHostel.floors = hostel.floors.map(floor => ({
+              ...floor,
+              rooms: floor.rooms.map(room => {
+                if (room.id === transferStudent.currentRoom) {
+                  return {
+                    ...room,
+                    occupants: room.occupants.filter(reg => reg !== transferStudent.regNumber),
+                    isAvailable: room.occupants.filter(reg => reg !== transferStudent.regNumber).length < room.capacity
+                  };
+                }
+                return room;
+              })
+            }));
+            updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
+          }
+          
+          // Add student to new room
+          if (hostel.id === targetHostel.id) {
+            updatedHostel.floors = hostel.floors.map(floor => ({
+              ...floor,
+              rooms: floor.rooms.map(room => {
+                if (room.id === selectedTransferRoom.id) {
+                  const newOccupants = [...room.occupants, transferStudent.regNumber];
+                  return {
+                    ...room,
+                    occupants: newOccupants,
+                    isAvailable: newOccupants.length < room.capacity
+                  };
+                }
+                return room;
+              })
+            }));
+            updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+          }
         }
         
         return updatedHostel;

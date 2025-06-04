@@ -287,16 +287,16 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
         selectedNewRoom.id,
         targetHostelId,
         studentProfile.gender as 'Male' | 'Female'
-      );
-        // Update local state immediately
+      );      // Update local state immediately
       const updatedHostels = hostels.map(hostel => {
         const updatedHostel = { ...hostel };
         
-        // Remove student from current room
-        if (hostel.id === existingAllocation.hostelId) {
+        // Handle same-hostel transfer (both remove and add in same hostel)
+        if (hostel.id === existingAllocation.hostelId && hostel.id === targetHostelId) {
           updatedHostel.floors = hostel.floors.map(floor => ({
             ...floor,
             rooms: floor.rooms.map(room => {
+              // Remove student from current room
               if (room.id === existingAllocation.roomId) {
                 return {
                   ...room,
@@ -304,17 +304,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                   isAvailable: room.occupants.filter(reg => reg !== existingAllocation.studentRegNumber).length < room.capacity
                 };
               }
-              return room;
-            })
-          }));
-          updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
-        }
-        
-        // Add student to new room
-        if (hostel.id === targetHostelId) {
-          updatedHostel.floors = hostel.floors.map(floor => ({
-            ...floor,
-            rooms: floor.rooms.map(room => {
+              // Add student to new room
               if (room.id === selectedNewRoom.id) {
                 const newOccupants = [...room.occupants, existingAllocation.studentRegNumber];
                 return {
@@ -326,7 +316,45 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
               return room;
             })
           }));
-          updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+          // No change in total occupancy for same-hostel transfers
+        } else {
+          // Handle cross-hostel transfer
+          // Remove student from current room
+          if (hostel.id === existingAllocation.hostelId) {
+            updatedHostel.floors = hostel.floors.map(floor => ({
+              ...floor,
+              rooms: floor.rooms.map(room => {
+                if (room.id === existingAllocation.roomId) {
+                  return {
+                    ...room,
+                    occupants: room.occupants.filter(reg => reg !== existingAllocation.studentRegNumber),
+                    isAvailable: room.occupants.filter(reg => reg !== existingAllocation.studentRegNumber).length < room.capacity
+                  };
+                }
+                return room;
+              })
+            }));
+            updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
+          }
+          
+          // Add student to new room
+          if (hostel.id === targetHostelId) {
+            updatedHostel.floors = hostel.floors.map(floor => ({
+              ...floor,
+              rooms: floor.rooms.map(room => {
+                if (room.id === selectedNewRoom.id) {
+                  const newOccupants = [...room.occupants, existingAllocation.studentRegNumber];
+                  return {
+                    ...room,
+                    occupants: newOccupants,
+                    isAvailable: newOccupants.length < room.capacity
+                  };
+                }
+                return room;
+              })
+            }));
+            updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+          }
         }
         
         return updatedHostel;
