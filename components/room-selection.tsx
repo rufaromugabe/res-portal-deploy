@@ -710,12 +710,10 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
               </div>
             </CardContent>          </Card>
         </div>
-      )}
-
-      {/* Change Room Dialog */}
+      )}      {/* Change Room Dialog */}
       {showChangeRoomDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
+          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Change Room</CardTitle>
               <CardDescription>
@@ -724,11 +722,57 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Current Room Information */}
+                {allocationRoomDetails && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                      <Bed className="w-4 h-4" />
+                      Your Current Room
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Room Number</p>
+                        <p className="font-medium">{allocationRoomDetails.number}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Hostel</p>
+                        <p className="font-medium">{allocationRoomDetails.hostelName}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Floor</p>
+                        <p className="font-medium">{allocationRoomDetails.floorName}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Price</p>
+                        <p className="font-medium text-green-600">${allocationRoomDetails.price}/semester</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Price Validation Notice */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-blue-600" />
+                    <p className="text-sm font-medium text-blue-800">Price Matching Required</p>
+                  </div>
+                  <p className="text-sm text-blue-700 mt-1">
+                    You can only change to rooms with the same price as your current room (${allocationRoomDetails?.price || 'N/A'}/semester) to maintain payment consistency.
+                  </p>
+                </div>
+                
                 <div className="grid grid-cols-1 gap-4">
                   {availableRoomsForChange.length === 0 ? (
-                    <p className="text-center text-sm text-gray-500 py-4">
-                      No available rooms for change. Please try again later.
-                    </p>
+                    <div className="text-center py-8">
+                      <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Available Rooms</h3>
+                      <p className="text-sm text-gray-500">
+                        No rooms with the same price (${allocationRoomDetails?.price || 'N/A'}/semester) are currently available for change.
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Please try again later or contact administration for assistance.
+                      </p>
+                    </div>
                   ) : (                    availableRoomsForChange.map(room => (
                       <Card 
                         key={room.id} 
@@ -741,10 +785,22 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-semibold text-lg">Room {room.number}</h4>
-                              {getRoomStatusIcon(room)}
+                              <div className="flex items-center gap-2">
+                                {room.price === allocationRoomDetails?.price && (
+                                  <Badge variant="default" className="text-xs">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Price Match
+                                  </Badge>
+                                )}
+                                {getRoomStatusIcon(room)}
+                              </div>
                             </div>
                             
                             <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Building className="w-3 h-3 text-gray-500" />
+                                <span>{room.hostelName}</span>
+                              </div>
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-3 h-3 text-gray-500" />
                                 <span>{room.floorName}</span>
@@ -755,7 +811,18 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                               </div>
                               <div className="flex items-center gap-2">
                                 <DollarSign className="w-3 h-3 text-gray-500" />
-                                <span>${room.price}/semester</span>
+                                <span className={`font-medium ${
+                                  room.price === allocationRoomDetails?.price 
+                                    ? 'text-green-600' 
+                                    : 'text-red-600'
+                                }`}>
+                                  ${room.price}/semester
+                                </span>
+                                {room.price === allocationRoomDetails?.price && (
+                                  <Badge variant="outline" className="text-xs text-green-600 border-green-200">
+                                    Same Price
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             
@@ -779,7 +846,40 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                       </Card>
                     ))
                   )}
-                </div>
+                </div>                
+                {/* Selected Room Summary */}
+                {selectedNewRoom && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Selected New Room
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-green-600">Room Number</p>
+                        <p className="font-medium">{selectedNewRoom.number}</p>
+                      </div>
+                      <div>
+                        <p className="text-green-600">Hostel</p>
+                        <p className="font-medium">{selectedNewRoom.hostelName}</p>
+                      </div>
+                      <div>
+                        <p className="text-green-600">Floor</p>
+                        <p className="font-medium">{selectedNewRoom.floorName}</p>
+                      </div>
+                      <div>
+                        <p className="text-green-600">Price</p>
+                        <p className="font-medium">${selectedNewRoom.price}/semester</p>
+                      </div>
+                    </div>
+                    {selectedNewRoom.price === allocationRoomDetails?.price && (
+                      <div className="mt-2 flex items-center gap-2 text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <p className="text-sm font-medium">Price matches your current room - no payment adjustment needed</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 <div className="flex gap-3">
                   <Button 
@@ -792,7 +892,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                   <Button 
                     className="flex-1"
                     onClick={confirmRoomChange}
-                    disabled={isChangingRoom}
+                    disabled={isChangingRoom || !selectedNewRoom}
                   >
                     {isChangingRoom ? 'Changing...' : 'Confirm Change'}
                   </Button>

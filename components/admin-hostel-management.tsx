@@ -116,7 +116,15 @@ const AdminHostelManagement: React.FC = () => {
 
   // Room transfer functionality state
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [transferStudent, setTransferStudent] = useState<{ regNumber: string; currentRoom: string; currentHostel: string; gender: 'Male' | 'Female' } | null>(null);
+  const [transferStudent, setTransferStudent] = useState<{ 
+    regNumber: string; 
+    currentRoom: string; 
+    currentHostel: string; 
+    currentRoomNumber: string;
+    currentHostelName: string;
+    currentRoomPrice: number;
+    gender: 'Male' | 'Female' 
+  } | null>(null);
   const [availableRoomsForTransfer, setAvailableRoomsForTransfer] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
   const [selectedTransferRoom, setSelectedTransferRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
@@ -673,8 +681,8 @@ const AdminHostelManagement: React.FC = () => {
     if (!room.isAvailable) return <XCircle className="w-4 h-4 text-red-500" />;
     if (room.isReserved) return <Clock className="w-4 h-4 text-yellow-500" />;
     if (room.occupants.length === 0) return <CheckCircle className="w-4 h-4 text-green-500" />;
-    return <Users className="w-4 h-4 text-blue-500" />;
-  };
+    return <Users className="w-4 h-4 text-blue-500" />;  };
+  
   // Room transfer functionality
   const handleTransferRoom = async (regNumber: string, currentRoom: string, currentHostel: string) => {
     try {
@@ -694,15 +702,50 @@ const AdminHostelManagement: React.FC = () => {
       
       const studentGender = studentProfile.gender;
       
+      // Get current room details including price
+      const currentHostelData = hostels.find(h => h.id === currentHostel);
+      if (!currentHostelData) {
+        toast.error('Current hostel not found');
+        return;
+      }
+      
+      let currentRoomData = null;
+      let currentRoomNumber = '';
+      let currentFloorName = '';
+      
+      for (const floor of currentHostelData.floors) {
+        const room = floor.rooms.find(r => r.id === currentRoom);
+        if (room) {
+          currentRoomData = room;
+          currentRoomNumber = room.number;
+          currentFloorName = floor.name;
+          break;
+        }
+      }
+      
+      if (!currentRoomData) {
+        toast.error('Current room details not found');
+        return;
+      }
+      
       const availableRooms = await getAvailableRoomsForChange(regNumber, studentGender, true);
       setAvailableRoomsForTransfer(availableRooms);
-      setTransferStudent({ regNumber, currentRoom, currentHostel, gender: studentGender });
+      setTransferStudent({ 
+        regNumber, 
+        currentRoom, 
+        currentHostel, 
+        currentRoomNumber,
+        currentHostelName: currentHostelData.name,
+        currentRoomPrice: currentHostelData.pricePerSemester,
+        gender: studentGender 
+      });
       setShowTransferDialog(true);
     } catch (error) {
       console.error('Error in handleTransferRoom:', error);
       toast.error('Failed to load available rooms for transfer');
     }
   };
+  
   const confirmRoomTransfer = async () => {
     if (!transferStudent || !selectedTransferRoom) return;
     
@@ -1539,23 +1582,29 @@ const AdminHostelManagement: React.FC = () => {
               <Label>Student Registration Number</Label>
               <Input value={transferStudent?.regNumber} readOnly />
             </div>
-            <div>
-              <Label>Current Room</Label>
-              <Input value={
-                transferStudent && selectedHostel ? 
-                (() => {
-                  // Find the current room details to show room number
-                  for (const floor of selectedHostel.floors) {
-                    for (const room of floor.rooms) {
-                      if (room.id === transferStudent.currentRoom) {
-                        return `${room.number} - ${selectedHostel.name} (${floor.name})`;
-                      }
-                    }
-                  }
-                  return transferStudent.currentRoom; // fallback to room ID
-                })() : ''
-              } readOnly />
+            
+            {/* Current Room Information */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <Bed className="w-4 h-4" />
+                Current Room
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Room Number</p>
+                  <p className="font-medium">{transferStudent?.currentRoomNumber}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Hostel</p>
+                  <p className="font-medium">{transferStudent?.currentHostelName}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Price</p>
+                  <p className="font-medium text-blue-600">${transferStudent?.currentRoomPrice}/semester</p>
+                </div>
+              </div>
             </div>
+            
             <div>
               <Label>Available Rooms</Label>
               <Select onValueChange={(value) => {
@@ -1568,7 +1617,19 @@ const AdminHostelManagement: React.FC = () => {
                 <SelectContent>
                   {availableRoomsForTransfer.map((room) => (
                     <SelectItem key={room.id} value={room.id}>
-                      {room.number} - {room.hostelName} ({room.floorName})
+                      {room.number} - {room.hostelName} ({room.floorName}) - ${room.price}/semester
+                      {room.price !== transferStudent?.currentRoomPrice && (
+                        <Badge 
+                          variant="outline" 
+                          className={`ml-2 text-xs ${
+                            room.price > (transferStudent?.currentRoomPrice || 0) 
+                              ? 'text-red-600 border-red-200' 
+                              : 'text-green-600 border-green-200'
+                          }`}
+                        >
+                          {room.price > (transferStudent?.currentRoomPrice || 0) ? 'Higher' : 'Lower'} Price
+                        </Badge>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1576,11 +1637,57 @@ const AdminHostelManagement: React.FC = () => {
             </div>
             
             {selectedTransferRoom && (
-              <div className="p-4 rounded-md border bg-green-50 border-green-200 text-green-800 text-sm">
-                <p className="font-semibold">Selected Room:</p>
-                <p>{selectedTransferRoom.number} - {selectedTransferRoom.hostelName} ({selectedTransferRoom.floorName})</p>
+              <div className="space-y-3">
+                <div className="p-4 rounded-md border bg-green-50 border-green-200 text-green-800 text-sm">
+                  <p className="font-semibold">Selected Room:</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <p className="text-green-600">Room</p>
+                      <p className="font-medium">{selectedTransferRoom.number}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Hostel</p>
+                      <p className="font-medium">{selectedTransferRoom.hostelName}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Floor</p>
+                      <p className="font-medium">{selectedTransferRoom.floorName}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Price</p>
+                      <p className="font-medium">${selectedTransferRoom.price}/semester</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Price Difference Warning */}
+                {selectedTransferRoom.price !== transferStudent?.currentRoomPrice && (
+                  <div className={`p-4 rounded-md border text-sm ${
+                    selectedTransferRoom.price > (transferStudent?.currentRoomPrice || 0)
+                      ? 'bg-red-50 border-red-200 text-red-800'
+                      : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      <p className="font-semibold">Price Difference Alert</p>
+                    </div>
+                    <p className="mt-1">
+                      {selectedTransferRoom.price > (transferStudent?.currentRoomPrice || 0) ? (
+                        <>
+                          The new room costs <strong>${selectedTransferRoom.price - (transferStudent?.currentRoomPrice || 0)} more</strong> per semester than the current room.
+                          The student may need to make an additional payment.
+                        </>
+                      ) : (
+                        <>
+                          The new room costs <strong>${(transferStudent?.currentRoomPrice || 0) - selectedTransferRoom.price} less</strong> per semester than the current room.
+                          A payment adjustment may be needed.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}            <div className="flex gap-2">
+            )}<div className="flex gap-2">
               <Button 
                 onClick={confirmRoomTransfer} 
                 className="flex-1" 

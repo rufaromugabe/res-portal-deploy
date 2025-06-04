@@ -270,6 +270,36 @@ export const fetchPaymentForAllocation = async (allocationId: string): Promise<P
 };
 
 /**
+ * Update payment records when allocation changes (for room changes)
+ */
+export const updatePaymentAllocationReference = async (
+  oldAllocationId: string,
+  newAllocationId: string
+): Promise<void> => {
+  try {
+    const paymentsCollection = collection(db, "payments");
+    const q = query(
+      paymentsCollection,
+      where("allocationId", "==", oldAllocationId)
+    );
+    
+    const paymentsSnap = await getDocs(q);
+    
+    // Update all payments that reference the old allocation ID
+    const updatePromises = paymentsSnap.docs.map(doc => 
+      updateDoc(doc.ref, { allocationId: newAllocationId })
+    );
+    
+    await Promise.all(updatePromises);
+    
+    console.log(`Updated ${paymentsSnap.docs.length} payment record(s) to reference new allocation ID`);
+  } catch (error) {
+    console.error("Error updating payment allocation references:", error);
+    throw error;
+  }
+};
+
+/**
  * Delete payment (admin function)
  */
 export const deletePayment = async (paymentId: string): Promise<void> => {

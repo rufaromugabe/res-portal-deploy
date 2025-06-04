@@ -906,9 +906,7 @@ export const changeRoomAllocation = async (
 
     if (!newRoom.isAvailable || newRoom.occupants.length >= newRoom.capacity) {
       throw new Error("Target room is not available");
-    }
-
-    // Check gender compatibility
+    }    // Check gender compatibility
     if (newRoom.gender !== 'Mixed' && newRoom.gender !== studentGender) {
       throw new Error("Room gender does not match student gender");
     }
@@ -916,7 +914,17 @@ export const changeRoomAllocation = async (
     // Prevent moving to the same room
     if (currentAllocation.roomId === newRoomId) {
       throw new Error("Cannot move to the same room");
-    }    // Check if this is a same-hostel move
+    }
+
+    // Check price compatibility - only allow room changes when prices are the same
+    const currentHostel = await fetchHostelById(currentAllocation.hostelId);
+    if (!currentHostel) {
+      throw new Error("Current hostel not found");
+    }
+    
+    if (currentHostel.pricePerSemester !== newHostel.pricePerSemester) {
+      throw new Error(`Cannot change rooms with different prices. Current room: $${currentHostel.pricePerSemester}/semester, New room: $${newHostel.pricePerSemester}/semester`);
+    }// Check if this is a same-hostel move
     const isSameHostelMove = currentAllocation.hostelId === newHostelId;
 
     if (isSameHostelMove) {
@@ -1017,10 +1025,17 @@ export const changeRoomAllocation = async (
           academicYear: currentAllocation.academicYear,
           paymentDeadline: currentAllocation.paymentDeadline,
           ...(currentAllocation.paymentId && { paymentId: currentAllocation.paymentId })
-        };
+        };        const allocationsCollection = collection(db, "roomAllocations");
+        const docRef = await addDoc(allocationsCollection, newAllocation);
 
-        const allocationsCollection = collection(db, "roomAllocations");
-        await addDoc(allocationsCollection, newAllocation);
+        // Step 4: Update payment records to reference the new allocation ID
+        try {
+          const { updatePaymentAllocationReference } = await import('./payment-data');
+          await updatePaymentAllocationReference(currentAllocation.id, docRef.id);
+        } catch (paymentError) {
+          console.error("Failed to update payment references:", paymentError);
+          // Continue execution as this is not critical for room allocation
+        }
 
       } catch (error) {
       // If adding to new room fails, try to restore the old allocation
@@ -1086,6 +1101,14 @@ export const getAvailableRoomsForChange = async (
     }
 
     const currentAllocation = currentAllocations[0];
+    
+    // Get current hostel to determine current room price
+    const currentHostel = await fetchHostelById(currentAllocation.hostelId);
+    if (!currentHostel) {
+      throw new Error("Current hostel not found");
+    }
+    
+    const currentRoomPrice = currentHostel.pricePerSemester;
     const hostels = await fetchHostels();
     const availableRooms: (Room & { hostelName: string; floorName: string; price: number })[] = [];
 
@@ -1093,6 +1116,11 @@ export const getAvailableRoomsForChange = async (
       if (hostel.isActive) {
         // For students, only show rooms in the same hostel
         if (!isAdminAction && hostel.id !== currentAllocation.hostelId) {
+          return;
+        }
+
+        // For students, only allow room changes when prices are the same
+        if (!isAdminAction && hostel.pricePerSemester !== currentRoomPrice) {
           return;
         }
 
