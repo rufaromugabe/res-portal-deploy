@@ -73,4 +73,5 @@ export interface HostelSettings {
   autoRevokeUnpaidAllocations: boolean;
   maxRoomCapacity: number;
   allowMixedGender: boolean;
+  allowRoomChanges: boolean; // Allow students to change rooms after allocation
 }

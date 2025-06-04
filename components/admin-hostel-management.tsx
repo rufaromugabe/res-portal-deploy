@@ -79,12 +79,12 @@ const AdminHostelManagement: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isAddRoomsDialogOpen, setIsAddRoomsDialogOpen] = useState(false);
-  const [isAddFloorDialogOpen, setIsAddFloorDialogOpen] = useState(false);
-  const [settings, setSettings] = useState<HostelSettings>({
+  const [isAddFloorDialogOpen, setIsAddFloorDialogOpen] = useState(false);  const [settings, setSettings] = useState<HostelSettings>({
     paymentGracePeriod: 7,
     autoRevokeUnpaidAllocations: true,
     maxRoomCapacity: 4,
-    allowMixedGender: false
+    allowMixedGender: false,
+    allowRoomChanges: true
   });
   const [newHostel, setNewHostel] = useState({
     name: '',
@@ -938,8 +938,7 @@ const AdminHostelManagement: React.FC = () => {
                     })}
                   />
                   <Label htmlFor="autoRevoke">Auto-revoke unpaid allocations</Label>
-                </div>
-                <div className="flex items-center space-x-2">
+                </div>                <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     id="mixedGender"
@@ -950,6 +949,18 @@ const AdminHostelManagement: React.FC = () => {
                     })}
                   />
                   <Label htmlFor="mixedGender">Allow mixed gender rooms</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="allowRoomChanges"
+                    checked={settings.allowRoomChanges}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      allowRoomChanges: e.target.checked
+                    })}
+                  />
+                  <Label htmlFor="allowRoomChanges">Allow students to change rooms</Label>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button onClick={handleUpdateSettings} className="flex-1">

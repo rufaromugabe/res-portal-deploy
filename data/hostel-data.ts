@@ -450,21 +450,21 @@ export const fetchHostelSettings = async (): Promise<HostelSettings> => {
     
     if (settingsSnap.exists()) {
       return settingsSnap.data() as HostelSettings;
-    }
-      // Default settings
+    }    // Default settings
     return {
       paymentGracePeriod: 168, // 168 hours = 7 days (grace period = deadline)
       autoRevokeUnpaidAllocations: true,
       maxRoomCapacity: 4,
-      allowMixedGender: false
+      allowMixedGender: false,
+      allowRoomChanges: true
     };
-  } catch (error) {
-    console.error("Error fetching hostel settings:", error);
+  } catch (error) {    console.error("Error fetching hostel settings:", error);
     return {
       paymentGracePeriod: 168, // 168 hours = 7 days (grace period = deadline)
       autoRevokeUnpaidAllocations: true,
       maxRoomCapacity: 4,
-      allowMixedGender: false
+      allowMixedGender: false,
+      allowRoomChanges: true
     };
   }
 };
