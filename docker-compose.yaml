@@ -1,28 +1,40 @@
 # Docker Compose Configuration for HIT Student Accommodation Portal
-# Removed version field as it's obsolete in newer Docker Compose versions
+version: '3.8'
 
 services:
   nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: node:18-alpine
     container_name: rez-application
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
     ports:
       - '3001:3000'
     env_file:
       - .env.local
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: sh -c "npm install && npm run build && npm start"
 
   # Cron service for automated payment deadline checks
   payment-checker:
     image: alpine:latest
     container_name: rez-payment-checker
-    user: root
+    user: "1000:1000"  # Using a non-root user (adjust UID:GID as needed)
     depends_on:
-      - nextjs
+      nextjs:
+        condition: service_healthy
     environment:
       - API_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}/api/check-payment-deadlines
       - PAYMENT_CHECK_TOKEN=${PAYMENT_CHECK_TOKEN:-default-secure-token}
+    volumes:
+      - payment_logs:/var/log
     restart: always
     command: >
       sh -c "
@@ -33,3 +45,11 @@ services:
         echo 'Payment checker cron job scheduled to run every 6 hours' &&
         crond -f -l 2
       "
+
+networks:
+  default:
+    name: rez-network
+
+volumes:
+  node_modules:
+  payment_logs:
