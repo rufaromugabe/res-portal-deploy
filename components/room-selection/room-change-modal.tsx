@@ -49,16 +49,29 @@ const RoomChangeModal: React.FC<RoomChangeModalProps> = ({
     room.hostelName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     room.floorName.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle>Change Room</DialogTitle>
-          <DialogDescription>
-            Select a new room from the available options. Room changes may incur additional fees.
-          </DialogDescription>
-        </DialogHeader>
+        <div className="flex items-center justify-between sticky top-0 z-10 bg-white pb-2">
+          <DialogHeader className="flex-1">
+            <DialogTitle>Change Room</DialogTitle>
+            <DialogDescription>
+              Select a new room from the available options. Room changes may incur additional fees.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} disabled={isChanging} size="sm">
+              Cancel
+            </Button>
+            <Button 
+              onClick={onConfirm} 
+              disabled={!selectedRoom || isChanging}
+              size="sm"
+            >
+              {isChanging ? 'Changing...' : 'Confirm'}
+            </Button>
+          </div>
+        </div>
         
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -150,21 +163,8 @@ const RoomChangeModal: React.FC<RoomChangeModalProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>          )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isChanging}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={onConfirm} 
-            disabled={!selectedRoom || isChanging}
-          >
-            {isChanging ? 'Changing Room...' : 'Confirm Change'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
