@@ -17,13 +17,13 @@ import {
   BookOpen,
   MapPin,
   DollarSign,
-  Clock,
-  AlertTriangle,
+  Clock,  AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  RotateCcw
 } from 'lucide-react';
 import { Hostel, Room } from '@/types/hostel';
-import { fetchHostels, allocateRoom, fetchStudentAllocations, fetchHostelSettings } from '@/data/hostel-data';
+import { fetchHostels, allocateRoom, fetchStudentAllocations, fetchHostelSettings, changeRoomAllocation, getAvailableRoomsForChange } from '@/data/hostel-data';
 import { StudentProfile } from './student-profile';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -42,11 +42,16 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [priceFilter, setPriceFilter] = useState<string>('any');
   const [capacityFilter, setCapacityFilter] = useState<string>('any');
-  const [loading, setLoading] = useState(true);  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [isSelecting, setIsSelecting] = useState<boolean>(false);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);  const [isSelecting, setIsSelecting] = useState<boolean>(false);  const [existingAllocation, setExistingAllocation] = useState<any>(null);
   const [allocationRoomDetails, setAllocationRoomDetails] = useState<any>(null);
   const [allocationChecked, setAllocationChecked] = useState(false);
   const [hostelSettings, setHostelSettings] = useState<any>(null);
+  
+  // Room change functionality state
+  const [showChangeRoomDialog, setShowChangeRoomDialog] = useState(false);
+  const [availableRoomsForChange, setAvailableRoomsForChange] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
+  const [selectedNewRoom, setSelectedNewRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
+  const [isChangingRoom, setIsChangingRoom] = useState(false);
   useEffect(() => {
     loadHostels();
     loadHostelSettings();
@@ -252,6 +257,98 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       setIsSelecting(false);
     }
   };
+  // Room change functionality
+  const handleChangeRoom = async () => {
+    if (!studentProfile || !existingAllocation || !studentProfile.gender) return;
+    
+    try {
+      const availableRooms = await getAvailableRoomsForChange(
+        existingAllocation.studentRegNumber, 
+        studentProfile.gender as 'Male' | 'Female'
+      );
+      setAvailableRoomsForChange(availableRooms);
+      setShowChangeRoomDialog(true);
+    } catch (error) {
+      toast.error('Failed to load available rooms for change');
+    }
+  };
+  const confirmRoomChange = async () => {
+    if (!selectedNewRoom || !studentProfile || !existingAllocation || !studentProfile.gender) return;
+    
+    try {
+      setIsChangingRoom(true);
+      
+      const targetHostelId = selectedNewRoom.hostelName === allocationRoomDetails?.hostelName 
+        ? existingAllocation.hostelId 
+        : hostels.find(h => h.name === selectedNewRoom.hostelName)?.id || existingAllocation.hostelId;
+      
+      await changeRoomAllocation(
+        existingAllocation.studentRegNumber,
+        selectedNewRoom.id,
+        targetHostelId,
+        studentProfile.gender as 'Male' | 'Female'
+      );
+        // Update local state immediately
+      const updatedHostels = hostels.map(hostel => {
+        const updatedHostel = { ...hostel };
+        
+        // Remove student from current room
+        if (hostel.id === existingAllocation.hostelId) {
+          updatedHostel.floors = hostel.floors.map(floor => ({
+            ...floor,
+            rooms: floor.rooms.map(room => {
+              if (room.id === existingAllocation.roomId) {
+                return {
+                  ...room,
+                  occupants: room.occupants.filter(reg => reg !== existingAllocation.studentRegNumber),
+                  isAvailable: room.occupants.filter(reg => reg !== existingAllocation.studentRegNumber).length < room.capacity
+                };
+              }
+              return room;
+            })
+          }));
+          updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
+        }
+        
+        // Add student to new room
+        if (hostel.id === targetHostelId) {
+          updatedHostel.floors = hostel.floors.map(floor => ({
+            ...floor,
+            rooms: floor.rooms.map(room => {
+              if (room.id === selectedNewRoom.id) {
+                const newOccupants = [...room.occupants, existingAllocation.studentRegNumber];
+                return {
+                  ...room,
+                  occupants: newOccupants,
+                  isAvailable: newOccupants.length < room.capacity
+                };
+              }
+              return room;
+            })
+          }));
+          updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+        }
+        
+        return updatedHostel;
+      });
+      
+      // Update hostels state
+      setHostels(updatedHostels);
+      
+      toast.success(`Room changed successfully to ${selectedNewRoom.number}!`);
+      
+      // Close dialog and refresh allocation data
+      setShowChangeRoomDialog(false);
+      setSelectedNewRoom(null);
+      checkExistingAllocation();
+      
+    } catch (error) {
+      console.error('Room change error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to change room');
+    } finally {
+      setIsChangingRoom(false);
+    }
+  };
 
   const getRoomStatusColor = (room: Room) => {
     if (!room.isAvailable) return 'bg-red-100 border-red-200';
@@ -334,8 +431,29 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                 <p className="text-sm text-yellow-700 mt-1">
                   Please complete your payment by the deadline to secure your room allocation.
                 </p>
+              </div>            )}
+            
+            {/* Room Change Section */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold">Room Management</h4>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleChangeRoom}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Change Room
+                </Button>
               </div>
-            )}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-700">
+                  You can change to a different room within the same hostel. 
+                  Your current payment status will be maintained.
+                </p>
+              </div>
+            </div>
             
             {/* Payment Management Section */}
             <div className="border-t pt-4">
@@ -587,6 +705,96 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
                     disabled={isSelecting}
                   >
                     {isSelecting ? 'Selecting...' : 'Confirm Selection'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>          </Card>
+        </div>
+      )}
+
+      {/* Change Room Dialog */}
+      {showChangeRoomDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle>Change Room</CardTitle>
+              <CardDescription>
+                Select a new room from the available options
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  {availableRoomsForChange.length === 0 ? (
+                    <p className="text-center text-sm text-gray-500 py-4">
+                      No available rooms for change. Please try again later.
+                    </p>
+                  ) : (                    availableRoomsForChange.map(room => (
+                      <Card 
+                        key={room.id} 
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${getRoomStatusColor(room)} ${
+                          selectedNewRoom?.id === room.id ? 'ring-2 ring-indigo-500' : ''
+                        }`}
+                        onClick={() => setSelectedNewRoom(room)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-lg">Room {room.number}</h4>
+                              {getRoomStatusIcon(room)}
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3 h-3 text-gray-500" />
+                                <span>{room.floorName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="w-3 h-3 text-gray-500" />
+                                <span>Capacity: {room.capacity}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="w-3 h-3 text-gray-500" />
+                                <span>${room.price}/semester</span>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2 border-t">
+                              <Badge variant={room.isAvailable && !room.isReserved ? 'default' : 'secondary'}>
+                                {getRoomStatusText(room)}
+                              </Badge>
+                            </div>
+                            
+                            {room.features && room.features.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {room.features.map((feature, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {feature}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setShowChangeRoomDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={confirmRoomChange}
+                    disabled={isChangingRoom}
+                  >
+                    {isChangingRoom ? 'Changing...' : 'Confirm Change'}
                   </Button>
                 </div>
               </div>

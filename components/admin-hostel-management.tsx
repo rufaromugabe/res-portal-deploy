@@ -28,7 +28,9 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  Database
+  Database,
+  RotateCcw,
+  ArrowRight
 } from 'lucide-react';
 import { Hostel, Room, RoomAllocation, HostelSettings } from '@/types/hostel';
 import {
@@ -45,7 +47,11 @@ import {
   addFloorToHostel,
   removeRoom,
   removeFloor,
-  removeOccupantFromRoom
+  removeOccupantFromRoom,
+  changeRoomAllocation,
+  getAvailableRoomsForChange,
+  fetchStudentAllocations,
+  fetchStudentProfile
 } from '@/data/hostel-data';
 import { forceInitializeHostelData } from '@/utils/initialize-hostels';
 import { getAuth } from 'firebase/auth';
@@ -107,6 +113,13 @@ const AdminHostelManagement: React.FC = () => {
   
   // Initialization state
   const [isInitializing, setIsInitializing] = useState(false);
+
+  // Room transfer functionality state
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [transferStudent, setTransferStudent] = useState<{ regNumber: string; currentRoom: string; currentHostel: string; gender: 'Male' | 'Female' } | null>(null);
+  const [availableRoomsForTransfer, setAvailableRoomsForTransfer] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
+  const [selectedTransferRoom, setSelectedTransferRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -656,12 +669,131 @@ const AdminHostelManagement: React.FC = () => {
     if (room.occupants.length === 0) return 'bg-green-100 border-green-200';
     return 'bg-blue-100 border-blue-200';
   };
-
   const getRoomStatusIcon = (room: Room) => {
     if (!room.isAvailable) return <XCircle className="w-4 h-4 text-red-500" />;
     if (room.isReserved) return <Clock className="w-4 h-4 text-yellow-500" />;
     if (room.occupants.length === 0) return <CheckCircle className="w-4 h-4 text-green-500" />;
     return <Users className="w-4 h-4 text-blue-500" />;
+  };
+  // Room transfer functionality
+  const handleTransferRoom = async (regNumber: string, currentRoom: string, currentHostel: string) => {
+    try {
+      // Get student allocation to determine gender
+      const allocations = await fetchStudentAllocations(regNumber);
+      if (allocations.length === 0) {
+        toast.error('Student allocation not found');
+        return;
+      }
+
+      // Fetch actual gender from student profile data
+      const studentProfile = await fetchStudentProfile(regNumber);
+      if (!studentProfile) {
+        toast.error('Student profile not found');
+        return;
+      }
+      
+      const studentGender = studentProfile.gender;
+      
+      const availableRooms = await getAvailableRoomsForChange(regNumber, studentGender, true);
+      setAvailableRoomsForTransfer(availableRooms);
+      setTransferStudent({ regNumber, currentRoom, currentHostel, gender: studentGender });
+      setShowTransferDialog(true);
+    } catch (error) {
+      console.error('Error in handleTransferRoom:', error);
+      toast.error('Failed to load available rooms for transfer');
+    }
+  };
+  const confirmRoomTransfer = async () => {
+    if (!transferStudent || !selectedTransferRoom) return;
+    
+    try {
+      setIsTransferring(true);
+      
+      // Find the hostel ID for the selected room
+      const targetHostel = hostels.find(h => h.name === selectedTransferRoom.hostelName);
+      if (!targetHostel) {
+        toast.error('Target hostel not found');
+        return;
+      }
+
+      await changeRoomAllocation(
+        transferStudent.regNumber,
+        selectedTransferRoom.id,
+        targetHostel.id,
+        transferStudent.gender,
+        true // isAdminAction
+      );
+      
+      // Update local state immediately for better UX
+      const updatedHostels = hostels.map(hostel => {
+        const updatedHostel = { ...hostel };
+          // Remove student from current room
+        if (hostel.id === transferStudent.currentHostel) {
+          updatedHostel.floors = hostel.floors.map(floor => ({
+            ...floor,
+            rooms: floor.rooms.map(room => {
+              if (room.id === transferStudent.currentRoom) {
+                return {
+                  ...room,
+                  occupants: room.occupants.filter(reg => reg !== transferStudent.regNumber),
+                  isAvailable: room.occupants.filter(reg => reg !== transferStudent.regNumber).length < room.capacity
+                };
+              }
+              return room;
+            })
+          }));
+          updatedHostel.currentOccupancy = Math.max(0, hostel.currentOccupancy - 1);
+        }
+        
+        // Add student to new room
+        if (hostel.id === targetHostel.id) {
+          updatedHostel.floors = hostel.floors.map(floor => ({
+            ...floor,
+            rooms: floor.rooms.map(room => {
+              if (room.id === selectedTransferRoom.id) {
+                const newOccupants = [...room.occupants, transferStudent.regNumber];
+                return {
+                  ...room,
+                  occupants: newOccupants,
+                  isAvailable: newOccupants.length < room.capacity
+                };
+              }
+              return room;
+            })
+          }));
+          updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+        }
+        
+        return updatedHostel;
+      });
+      
+      // Update state
+      setHostels(updatedHostels);
+      
+      // Update selectedHostel if it's one of the affected hostels
+      if (selectedHostel) {
+        const updatedSelectedHostel = updatedHostels.find(h => h.id === selectedHostel.id);
+        if (updatedSelectedHostel) {
+          setSelectedHostel(updatedSelectedHostel);
+        }
+      }
+      
+      toast.success(`Student ${transferStudent.regNumber} transferred successfully to room ${selectedTransferRoom.number}!`);
+      
+      // Close dialog and reset state
+      setShowTransferDialog(false);
+      setSelectedTransferRoom(null);
+      setTransferStudent(null);
+      
+      // Still call loadData to ensure consistency with backend
+      loadData();
+      
+    } catch (error) {
+      console.error('Room transfer error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to transfer room');
+    } finally {
+      setIsTransferring(false);
+    }
   };
   if (loading) {
     return (
@@ -669,7 +801,9 @@ const AdminHostelManagement: React.FC = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
-  }  return (
+  }
+
+  return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="border-b border-gray-200 bg-white">
@@ -1334,22 +1468,32 @@ const AdminHostelManagement: React.FC = () => {
                                           <span className="text-xs font-medium text-gray-900 truncate">{regNumber}</span>
                                           {isRemoving && (
                                             <span className="text-xs text-yellow-600 italic hidden sm:inline">Removing...</span>
-                                          )}
-                                        </div>                                        {!bulkActionMode && (
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleRemoveOccupant(selectedHostel, room.id, regNumber)}
-                                            className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                                            title={`Remove ${regNumber} from room`}
-                                            disabled={isRemoving}
-                                          >
-                                            {isRemoving ? (
-                                              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
-                                            ) : (
-                                              <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                                            )}
-                                          </Button>
+                                          )}                                        </div>                                        {!bulkActionMode && (
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => handleTransferRoom(regNumber, room.id, selectedHostel?.id || '')}
+                                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 flex-shrink-0"
+                                              title={`Transfer ${regNumber} to another room`}
+                                            >
+                                              <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => handleRemoveOccupant(selectedHostel, room.id, regNumber)}
+                                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                                              title={`Remove ${regNumber} from room`}
+                                              disabled={isRemoving}
+                                            >
+                                              {isRemoving ? (
+                                                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin"></div>
+                                              ) : (
+                                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                              )}
+                                            </Button>
+                                          </div>
                                         )}
                                       </div>
                                     );
@@ -1363,12 +1507,12 @@ const AdminHostelManagement: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              ))}            </div>
           </DialogContent>
         </Dialog>
       )}
-      
+      </div>
+
       {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={confirmDialog.open}
@@ -1381,7 +1525,75 @@ const AdminHostelManagement: React.FC = () => {
         confirmText="Remove"
         cancelText="Cancel"
       />
-      </div>
+
+      {/* Room Transfer Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Transfer Room</DialogTitle>
+            <DialogDescription>
+              Transfer a student to a different room
+            </DialogDescription>
+          </DialogHeader>          <div className="space-y-4">
+            <div>
+              <Label>Student Registration Number</Label>
+              <Input value={transferStudent?.regNumber} readOnly />
+            </div>
+            <div>
+              <Label>Current Room</Label>
+              <Input value={
+                transferStudent && selectedHostel ? 
+                (() => {
+                  // Find the current room details to show room number
+                  for (const floor of selectedHostel.floors) {
+                    for (const room of floor.rooms) {
+                      if (room.id === transferStudent.currentRoom) {
+                        return `${room.number} - ${selectedHostel.name} (${floor.name})`;
+                      }
+                    }
+                  }
+                  return transferStudent.currentRoom; // fallback to room ID
+                })() : ''
+              } readOnly />
+            </div>
+            <div>
+              <Label>Available Rooms</Label>
+              <Select onValueChange={(value) => {
+                const room = availableRoomsForTransfer.find(r => r.id === value);
+                setSelectedTransferRoom(room || null);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a room" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRoomsForTransfer.map((room) => (
+                    <SelectItem key={room.id} value={room.id}>
+                      {room.number} - {room.hostelName} ({room.floorName})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedTransferRoom && (
+              <div className="p-4 rounded-md border bg-green-50 border-green-200 text-green-800 text-sm">
+                <p className="font-semibold">Selected Room:</p>
+                <p>{selectedTransferRoom.number} - {selectedTransferRoom.hostelName} ({selectedTransferRoom.floorName})</p>
+              </div>
+            )}            <div className="flex gap-2">
+              <Button 
+                onClick={confirmRoomTransfer} 
+                className="flex-1" 
+                disabled={isTransferring || !selectedTransferRoom}
+              >
+                {isTransferring ? 'Transferring...' : 'Confirm Transfer'}
+              </Button>
+              <Button onClick={() => setShowTransferDialog(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>        </DialogContent>
+      </Dialog>
     </div>
   );
 };
