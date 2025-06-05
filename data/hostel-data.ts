@@ -1285,6 +1285,20 @@ export const adminAllocateStudentToRoom = async (
       throw new Error("Student already has a room allocation");
     }
 
+    // Check if student has submitted an application
+    const applicationDoc = doc(db, "applications", studentRegNumber);
+    const applicationSnap = await getDoc(applicationDoc);
+    
+    if (!applicationSnap.exists()) {
+      throw new Error("Student has not submitted an accommodation application");
+    }
+    
+    // Check if application is accepted
+    const applicationData = applicationSnap.data();
+    if (applicationData.status !== "Accepted") {
+      throw new Error("Student's application has not been accepted yet");
+    }
+
     // Fetch student profile (for gender)
     const studentProfile = await fetchStudentProfile(studentRegNumber);
     if (!studentProfile) {
