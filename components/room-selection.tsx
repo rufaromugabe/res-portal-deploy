@@ -50,7 +50,6 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [availableRoomsForChange, setAvailableRoomsForChange] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
   const [selectedNewRoom, setSelectedNewRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
   const [isChangingRoom, setIsChangingRoom] = useState(false);
-
   // Custom hooks
   const { existingAllocation, allocationRoomDetails, checkExistingAllocation } = useStudentAllocation(hostels);
   const { filteredRooms, availableRoomsCount, selectedHostelData } = useRoomFiltering(hostels, {
@@ -58,7 +57,9 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     selectedFloor,
     searchTerm,
     priceFilter,
-    capacityFilter: 'any'
+    capacityFilter: 'any',
+    // Only apply gender filter for first-time selection (no existing allocation)
+    studentGender: !existingAllocation && studentProfile?.gender ? studentProfile.gender as 'Male' | 'Female' : undefined
   });
 
   useEffect(() => {
@@ -242,8 +243,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 space-y-6">
-        {/* Filters */}
+      <div className="flex-1 overflow-auto p-6 space-y-6">        {/* Filters */}
         <RoomFilters
           hostels={hostels}
           selectedHostel={selectedHostel}
@@ -254,6 +254,8 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
           onFloorChange={setSelectedFloor}
           onSearchChange={setSearchTerm}
           onPriceFilterChange={setPriceFilter}
+          studentGender={studentProfile?.gender as 'Male' | 'Female'}
+          showGenderFilter={!existingAllocation && !!studentProfile?.gender}
         />
 
         {/* Hostel Info */}

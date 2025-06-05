@@ -9,6 +9,7 @@ interface FilterOptions {
   searchTerm: string;
   priceFilter: string;
   capacityFilter: string;
+  studentGender?: 'Male' | 'Female';
 }
 
 export const useRoomFiltering = (hostels: Hostel[], filters: FilterOptions) => {
@@ -55,11 +56,16 @@ export const useRoomFiltering = (hostels: Hostel[], filters: FilterOptions) => {
           return room.price >= min;
         }
       });
-    }
-
-    // Apply capacity filter
+    }    // Apply capacity filter
     if (filters.capacityFilter && filters.capacityFilter !== 'any') {
       rooms = rooms.filter(room => room.capacity.toString() === filters.capacityFilter);
+    }
+
+    // Apply gender filter for first-time selection
+    if (filters.studentGender) {
+      rooms = rooms.filter(room => 
+        room.gender === filters.studentGender || room.gender === 'Mixed'
+      );
     }
 
     // Sort by availability first, then by room number

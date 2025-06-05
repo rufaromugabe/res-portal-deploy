@@ -16,6 +16,8 @@ interface RoomFiltersProps {
   onFloorChange: (value: string) => void;
   onSearchChange: (value: string) => void;
   onPriceFilterChange: (value: string) => void;
+  studentGender?: 'Male' | 'Female';
+  showGenderFilter?: boolean;
 }
 
 const RoomFilters: React.FC<RoomFiltersProps> = ({
@@ -27,14 +29,20 @@ const RoomFilters: React.FC<RoomFiltersProps> = ({
   onHostelChange,
   onFloorChange,
   onSearchChange,
-  onPriceFilterChange
+  onPriceFilterChange,
+  studentGender,
+  showGenderFilter
 }) => {
   const selectedHostelData = hostels.find(h => h.id === selectedHostel);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card>      <CardHeader>
         <CardTitle>Filter Rooms</CardTitle>
+        {showGenderFilter && studentGender && (
+          <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+            📍 Showing {studentGender} and Mixed gender rooms only
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
