@@ -475,6 +475,7 @@ export const studentDatabase: StudentData[] = [
 
 // Bachelor of Technology Honours Degree in Forensic Accounting and Auditing - FEMALE
 { regNumber: "H250007Y", name: "ESTHER RUTENDO", surname: "MANDIPAZA", gender: "Female", programme: "BTECH_FORENSIC_ACCOUNTING_AUDITING", part: "1" },
+{ regNumber: "H250701E", name: "JOSEPH MUNYARADZI", surname: "ARUFAYI", gender: "Male", programme: "BTECH_FORENSIC_ACCOUNTING_AUDITING", part: "1" },
 { regNumber: "H250020N", name: "ESTHER TINASHE", surname: "GOKONDO", gender: "Female", programme: "BTECH_FORENSIC_ACCOUNTING_AUDITING", part: "1" },
 { regNumber: "H250060M", name: "PROGRESSIVE", surname: "MTAIKO", gender: "Female", programme: "BTECH_FORENSIC_ACCOUNTING_AUDITING", part: "1" },
 { regNumber: "H250063P", name: "NATALLIE", surname: "MAKUWAZA", gender: "Female", programme: "BTECH_FORENSIC_ACCOUNTING_AUDITING", part: "1" },

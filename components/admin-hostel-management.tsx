@@ -30,7 +30,8 @@ import {
   Eye,
   Database,
   RotateCcw,
-  ArrowRight
+  ArrowRight,
+  UserPlus
 } from 'lucide-react';
 import { Hostel, Room, RoomAllocation, HostelSettings } from '@/types/hostel';
 import {
@@ -51,7 +52,8 @@ import {
   changeRoomAllocation,
   getAvailableRoomsForChange,
   fetchStudentAllocations,
-  fetchStudentProfile
+  fetchStudentProfile,
+  adminAllocateStudentToRoom
 } from '@/data/hostel-data';
 import { getAuth } from 'firebase/auth';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -127,6 +129,15 @@ const AdminHostelManagement: React.FC = () => {
   const [availableRoomsForTransfer, setAvailableRoomsForTransfer] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
   const [selectedTransferRoom, setSelectedTransferRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
+
+  // Assign student dialog state
+  const [showAssignStudentDialog, setShowAssignStudentDialog] = useState(false);
+  const [assignStudentForm, setAssignStudentForm] = useState({
+    regNumber: '',
+    roomId: '',
+    hostelId: ''
+  });
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -848,6 +859,81 @@ const AdminHostelManagement: React.FC = () => {
       setIsTransferring(false);
     }
   };
+
+  // Assign student functionality
+  const handleOpenAssignStudentDialog = (roomId: string, hostelId: string) => {
+    setAssignStudentForm({
+      regNumber: '',
+      roomId,
+      hostelId
+    });
+    setShowAssignStudentDialog(true);
+  };
+
+  const handleAssignStudent = async () => {
+    if (!assignStudentForm.regNumber.trim() || !assignStudentForm.roomId || !assignStudentForm.hostelId) {
+      toast.error('Please enter a valid registration number');
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      
+      await adminAllocateStudentToRoom(
+        assignStudentForm.regNumber.trim(),
+        assignStudentForm.roomId,
+        assignStudentForm.hostelId
+      );
+
+      // Update local state immediately for better UX
+      const updatedHostels = hostels.map(hostel => {
+        if (hostel.id === assignStudentForm.hostelId) {
+          const updatedHostel = { ...hostel };
+          updatedHostel.floors = hostel.floors.map(floor => ({
+            ...floor,
+            rooms: floor.rooms.map(room => {
+              if (room.id === assignStudentForm.roomId) {
+                const newOccupants = [...room.occupants, assignStudentForm.regNumber.trim()];
+                return {
+                  ...room,
+                  occupants: newOccupants,
+                  isAvailable: newOccupants.length < room.capacity
+                };
+              }
+              return room;
+            })
+          }));
+          updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+        }
+        return hostel;
+      });
+
+      setHostels(updatedHostels);
+
+      // Update selectedHostel if it's the affected hostel
+      if (selectedHostel && selectedHostel.id === assignStudentForm.hostelId) {
+        const updatedSelectedHostel = updatedHostels.find(h => h.id === selectedHostel.id);
+        if (updatedSelectedHostel) {
+          setSelectedHostel(updatedSelectedHostel);
+        }
+      }
+
+      toast.success(`Student ${assignStudentForm.regNumber} assigned successfully!`);
+      
+      // Close dialog and reset form
+      setShowAssignStudentDialog(false);
+      setAssignStudentForm({ regNumber: '', roomId: '', hostelId: '' });
+      
+      // Still call loadData to ensure consistency with backend
+      loadData();
+      
+    } catch (error) {
+      console.error('Student assignment error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to assign student to room');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1472,6 +1558,21 @@ const AdminHostelManagement: React.FC = () => {
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
                               </div>
+                              {/* Second row of action buttons */}
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenAssignStudentDialog(room.id, selectedHostel.id)}
+                                  className="flex-1 text-xs h-7"
+                                  disabled={room.occupants.length >= room.capacity || !room.isAvailable}
+                                  title={room.occupants.length >= room.capacity ? "Room at full capacity" : "Assign student to room"}
+                                >
+                                  <UserPlus className="w-3 h-3 mr-1" />
+                                  <span className="hidden sm:inline">Assign Student</span>
+                                  <span className="sm:hidden">Assign</span>
+                                </Button>
+                              </div>
                             </div>
 
                             {room.occupants.length > 0 && (                              <div className="pt-2 sm:pt-3 border-t border-gray-200">
@@ -1712,6 +1813,143 @@ const AdminHostelManagement: React.FC = () => {
               </Button>
             </div>
           </div>        </DialogContent>
+      </Dialog>
+
+      {/* Assign Student Dialog */}
+      <Dialog open={showAssignStudentDialog} onOpenChange={setShowAssignStudentDialog}>
+        <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Student to Room</DialogTitle>
+            <DialogDescription>
+              Assign a student to a specific room by their registration number
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Room Information */}
+            {(() => {
+              // Find the room details for display
+              const hostel = hostels.find(h => h.id === assignStudentForm.hostelId);
+              const room = hostel?.floors
+                .flatMap(f => f.rooms)
+                .find(r => r.id === assignStudentForm.roomId);
+              const floor = hostel?.floors.find(f => 
+                f.rooms.some(r => r.id === assignStudentForm.roomId)
+              );
+              
+              return room && hostel && floor ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                    <Bed className="w-4 h-4" />
+                    Room Information
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-blue-600">Room Number</p>
+                      <p className="font-medium">{room.number}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Hostel</p>
+                      <p className="font-medium">{hostel.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Floor</p>
+                      <p className="font-medium">{floor.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Price</p>
+                      <p className="font-medium">${room.price}/semester</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Capacity</p>
+                      <p className="font-medium">{room.occupants.length}/{room.capacity}</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">Gender</p>
+                      <p className="font-medium capitalize">{room.gender}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Current occupants */}
+                  {room.occupants.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <p className="text-blue-600 text-sm font-medium mb-2">Current Occupants:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {room.occupants.map((occupant, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {occupant}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+            
+            {/* Student Registration Number Input */}
+            <div>
+              <Label htmlFor="regNumber">Student Registration Number</Label>
+              <Input
+                id="regNumber"
+                type="text"
+                placeholder="Enter student registration number"
+                value={assignStudentForm.regNumber}
+                onChange={(e) => setAssignStudentForm(prev => ({
+                  ...prev,
+                  regNumber: e.target.value
+                }))}
+                disabled={isAssigning}
+                className="mt-1"
+              />
+            </div>
+            
+            {/* Important Notes */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-yellow-800">
+                  <p className="font-semibold mb-2">Important Notes:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Student must not already have a room allocation</li>
+                    <li>• Student's gender must match the room's gender requirement</li>
+                    <li>• Room must have available capacity</li>
+                    <li>• Student will be notified of the assignment</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              <Button 
+                onClick={handleAssignStudent} 
+                className="flex-1" 
+                disabled={isAssigning || !assignStudentForm.regNumber.trim()}
+              >
+                {isAssigning ? (
+                  <>
+                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Assign Student
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => setShowAssignStudentDialog(false)} 
+                variant="outline" 
+                className="flex-1"
+                disabled={isAssigning}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
       </Dialog>
     </div>
   );

@@ -1270,6 +1270,57 @@ export const validateRoomAllocationIntegrity = async (): Promise<{
   }
 };
 
+/**
+ * Admin: Allocate an applied student to a room (with all constraints)
+ */
+export const adminAllocateStudentToRoom = async (
+  studentRegNumber: string,
+  roomId: string,
+  hostelId: string
+): Promise<RoomAllocation> => {
+  try {
+    // Check if student already has an allocation
+    const allocations = await fetchStudentAllocations(studentRegNumber);
+    if (allocations.length > 0) {
+      throw new Error("Student already has a room allocation");
+    }
+
+    // Fetch student profile (for gender)
+    const studentProfile = await fetchStudentProfile(studentRegNumber);
+    if (!studentProfile) {
+      throw new Error("Student profile not found");
+    }
+    const studentGender = studentProfile.gender;
+
+    // Fetch hostel and room
+    const hostel = await fetchHostelById(hostelId);
+    if (!hostel) throw new Error("Hostel not found");
+    let targetRoom: Room | null = null;
+    for (const floor of hostel.floors) {
+      const room = floor.rooms.find(r => r.id === roomId);
+      if (room) {
+        targetRoom = room;
+        break;
+      }
+    }
+    if (!targetRoom) throw new Error("Room not found");
+
+    // Check constraints: availability, not reserved, capacity, gender
+    if (!targetRoom.isAvailable || targetRoom.isReserved || targetRoom.occupants.length >= targetRoom.capacity) {
+      throw new Error("Room is not available for allocation");
+    }
+    if (targetRoom.gender !== 'Mixed' && targetRoom.gender !== studentGender) {
+      throw new Error("Room gender does not match student gender");
+    }
+
+    // Allocate room using existing logic
+    return await allocateRoom(studentRegNumber, roomId, hostelId);
+  } catch (error) {
+    console.error("Error allocating student to room (admin):", error);
+    throw error;
+  }
+};
+
 // Helper functions
 function getCurrentSemester(): string {
   const now = new Date();
