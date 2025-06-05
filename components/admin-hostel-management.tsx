@@ -904,6 +904,7 @@ const AdminHostelManagement: React.FC = () => {
             })
           }));
           updatedHostel.currentOccupancy = hostel.currentOccupancy + 1;
+          return updatedHostel;
         }
         return hostel;
       });
