@@ -53,7 +53,6 @@ import {
   fetchStudentAllocations,
   fetchStudentProfile
 } from '@/data/hostel-data';
-import { forceInitializeHostelData } from '@/utils/initialize-hostels';
 import { getAuth } from 'firebase/auth';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
@@ -157,25 +156,7 @@ const AdminHostelManagement: React.FC = () => {
     }
   };
 
-  const handleManualInitialization = async () => {
-    setIsInitializing(true);
-    try {
-      const result = await forceInitializeHostelData();
-      if (result) {
-        toast.success('Hostel data initialized successfully!');
-        await loadData(); // Reload the data to show the new hostels
-      } else {
-        toast.error('Failed to initialize hostel data');
-      }
-    } catch (error) {
-      console.error('Initialization error:', error);
-      toast.error('Failed to initialize hostel data');
-    } finally {
-      setIsInitializing(false);
-    }
-  };
-
-  const handleCreateHostel = async () => {
+   const handleCreateHostel = async () => {
     try {
       const hostelData: Omit<Hostel, 'id'> = {
         ...newHostel,
@@ -977,15 +958,6 @@ const AdminHostelManagement: React.FC = () => {
                 </div>              </div>
             </DialogContent>
           </Dialog>
-
-          <Button 
-            variant="outline" 
-            onClick={handleManualInitialization}
-            disabled={isInitializing}
-          >
-            <Database className="w-4 h-4 mr-2" />
-            {isInitializing ? 'Initializing...' : 'Initialize Data'}
-          </Button>
 
           <Dialog open={isAddRoomsDialogOpen} onOpenChange={setIsAddRoomsDialogOpen}>
             <DialogTrigger asChild>
