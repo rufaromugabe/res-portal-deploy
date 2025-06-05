@@ -53,7 +53,6 @@ import {
   fetchStudentAllocations,
   fetchStudentProfile
 } from '@/data/hostel-data';
-import { forceInitializeHostelData } from '@/utils/initialize-hostels';
 import { getAuth } from 'firebase/auth';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
