@@ -125,11 +125,10 @@ const StudentApplicationForm: React.FC = () => {
           const applicationSnap = await getDoc(applicationDoc);
           if (applicationSnap.exists()) {
             setApplication(applicationSnap.data() as ApplicationData);
-          }
-
-          // Fetch hostels
+          }          // Fetch hostels and filter only active ones
           const hostelData = await fetchHostels();
-          setHostels(hostelData);
+          const activeHostels = hostelData.filter(hostel => hostel.isActive);
+          setHostels(activeHostels);
 
           // Check for room allocation
           if (profileSnap.exists() && regNumber) {
