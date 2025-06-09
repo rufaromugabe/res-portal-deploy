@@ -39,6 +39,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter, // Added CardFooter
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -432,7 +433,7 @@ const StudentProfileForm: React.FC<{}> = () => {
                     Profile Complete
                   </Badge>
                 )}
-                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2">
+                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2 w-full md:w-auto">
                   {isEditing && (
                     <Button
                       type="button"
@@ -659,41 +660,38 @@ const StudentProfileForm: React.FC<{}> = () => {
               </form>
             </Form>
           </CardContent>
-        </Card>        {/* Quick Actions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
-            <CardDescription className="text-sm md:text-base">
-              Access the most common features from here
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CardFooter className="flex justify-end">
+            <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2 w-full md:w-auto">
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                  className="w-full md:w-auto"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  <span className="md:inline">Cancel</span>
+                </Button>
+              )}
               <Button
-                variant="outline"
-                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2"
-                onClick={() => router.push("/student/room-selection")}
+                type="button"
+                onClick={handleEditClick}
+                className="w-full md:w-auto"
               >
-                <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
-                <span className="text-xs md:text-sm">Room Selection</span>
+                {isEditing ? (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    <span className="md:inline">Save Changes</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit className="w-4 h-4 mr-2" />
+                    <span className="md:inline">Edit Profile</span>
+                  </>
+                )}
               </Button>
-              <Button
-                variant="outline"
-                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2"
-                onClick={() => router.push("/student/payments")}
-              >
-                <GraduationCap className="w-5 h-5 md:w-6 md:h-6" />
-                <span className="text-xs md:text-sm">View Payments</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-16 md:h-20 flex flex-col space-y-1 md:space-y-2 sm:col-span-2 lg:col-span-1"
-                onClick={() => router.push("/student/application")}
-              >
-                <User className="w-5 h-5 md:w-6 md:h-6" />
-                <span className="text-xs md:text-sm">Application Status</span>
-              </Button>            </div>
-          </CardContent>
+            </div>
+          </CardFooter>
         </Card>
           </>
         )}
