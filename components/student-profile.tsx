@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "./ui/combobox";
 import { programmes } from "@/data/programmes";
-import { studentDatabase, findStudentByRegNumber, type StudentData } from "@/data/student-data";
+import { findStudentByRegNumber, type StudentData } from "@/data/firebase-student-data";
 import { useRouter } from "next/navigation";
 
 // Updated Student interface to match StudentData structure
@@ -209,32 +209,34 @@ const StudentProfileForm: React.FC<{}> = () => {
     };
 
     fetchProfile();
-    }, [form]);
-  const handleRegNumberSubmit = async () => {
+    }, [form]);  const handleRegNumberSubmit = async () => {
     setIsSearching(true);
     setOnboardingError("");
 
-    // Simulate search delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const studentData = findStudentByRegNumber(inputRegNumber);
-    if (studentData) {
-      // Convert StudentData to Student format for compatibility
-      const student: Student = {
-        email: studentData.email || authDetails.userEmail, // Use sign-in email if not provided
-        gender: studentData.gender,
-        name: `${studentData.name} ${studentData.surname}`, // Concatenate first name and surname
-        part: studentData.part,
-        phone: studentData.phone || "", // Will be updated by student
-        programme: studentData.programme,
-        regNumber: studentData.regNumber,
-      };
+    try {
+      const studentData = await findStudentByRegNumber(inputRegNumber);
+      if (studentData) {
+        // Convert StudentData to Student format for compatibility
+        const student: Student = {
+          email: studentData.email || authDetails.userEmail, // Use sign-in email if not provided
+          gender: studentData.gender,
+          name: `${studentData.name} ${studentData.surname}`, // Concatenate first name and surname
+          part: studentData.part,
+          phone: studentData.phone || "", // Will be updated by student
+          programme: studentData.programme,
+          regNumber: studentData.regNumber,
+        };
         // Directly prefill form and show profile page
-      handleOnboardingComplete(student);
-    } else {
-      setOnboardingError("Registration number not found. Please try again.");
+        handleOnboardingComplete(student);
+      } else {
+        setOnboardingError("Registration number not found. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error looking up student:", error);
+      setOnboardingError("Error looking up student data. Please try again.");    } finally {
+      setIsSearching(false);
     }
-    setIsSearching(false);  };
+  };
   const handleOnboardingComplete = (studentData: Student) => {
     // Just prefill the form with the student data, don't save to Firebase yet
     form.reset({
