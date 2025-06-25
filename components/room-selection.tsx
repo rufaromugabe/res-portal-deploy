@@ -24,6 +24,9 @@ import RoomChangeModal from './room-selection/room-change-modal';
 import useStudentAllocation from '@/hooks/useStudentAllocation';
 import useRoomFiltering from '@/hooks/useRoomFiltering';
 
+// Import hostel ID validation utilities
+import { validateHostelId, logHostelOperation } from '@/utils/hostel-id-validation';
+
 interface RoomSelectionProps {
   onRoomSelected: (roomId: string, hostelId: string) => void;
   studentProfile: StudentProfile | null;
@@ -127,8 +130,33 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
         toast.error("Registration number not found. Please complete your profile first.");
         return;
       }
+
+      // STRICT ID VALIDATION: Ensure we have a valid hostel ID
+      if (!selectedHostel) {
+        toast.error("No hostel selected. Please select a hostel first.");
+        return;
+      }
+
+      // STRICT ID VALIDATION: Verify the hostel ID exists in our data
+      const hostelValidation = await validateHostelId(selectedHostel);
+      if (!hostelValidation.isValid) {
+        toast.error(hostelValidation.error || "Selected hostel not found. Please refresh and try again.");
+        return;
+      }
+      
+      logHostelOperation('ALLOCATE', {
+        hostelId: selectedHostel,
+        hostelName: hostelValidation.hostelName,
+        roomId: selectedRoom.id,
+        studentRegNumber: regNumber,
+        operation: 'room_allocation'
+      });
+      
+      console.log(`Allocating room ${selectedRoom.id} in hostel ${selectedHostel} (${hostelValidation.hostelName}) for student ${regNumber}`);
       
       const settings = await fetchHostelSettings();
+      
+      // STRICT ID USAGE: Always pass hostel ID, never names or other identifiers
       await allocateRoom(regNumber, selectedRoom.id, selectedHostel);
       
       const deadlineHours = settings.paymentGracePeriod;
@@ -141,6 +169,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
       checkExistingAllocation();
       setSelectedRoom(null);
     } catch (error) {
+      console.error('Room allocation error:', error);
       toast.error('Failed to allocate room. Please try again.');
     } finally {
       setIsSelecting(false);
@@ -169,9 +198,30 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     try {
       setIsChangingRoom(true);
       
-      const targetHostelId = selectedNewRoom.hostelName === allocationRoomDetails?.hostelName 
-        ? existingAllocation.hostelId 
-        : hostels.find(h => h.name === selectedNewRoom.hostelName)?.id || existingAllocation.hostelId;
+      // STRICT ID USAGE: Find hostel ID by matching hostel name from selectedNewRoom
+      // This ensures we always use proper hostel IDs and never create duplicate hostels
+      const targetHostel = hostels.find(h => h.name === selectedNewRoom.hostelName);
+      if (!targetHostel) {
+        throw new Error(`Hostel "${selectedNewRoom.hostelName}" not found. Please refresh and try again.`);
+      }
+      
+      // Additional validation to ensure the hostel ID is valid
+      const hostelValidation = await validateHostelId(targetHostel.id);
+      if (!hostelValidation.isValid) {
+        throw new Error(hostelValidation.error || "Invalid hostel selected. Please refresh and try again.");
+      }
+      
+      const targetHostelId = targetHostel.id;
+      
+      logHostelOperation('CHANGE', {
+        fromHostelId: existingAllocation.hostelId,
+        toHostelId: targetHostelId,
+        toHostelName: selectedNewRoom.hostelName,
+        fromRoomId: existingAllocation.roomId,
+        toRoomId: selectedNewRoom.id,
+        studentRegNumber: existingAllocation.studentRegNumber,
+        operation: 'room_change'
+      });
       
       await changeRoomAllocation(
         existingAllocation.studentRegNumber,

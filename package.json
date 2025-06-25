@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:students": "node scripts/migrate-students-complete.js",
+    "verify:students": "node -e \"require('./scripts/migrate-students-complete.js').verifyMigration()\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -34,6 +36,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "dotenv": "^16.5.0",
     "faker": "^6.6.6",
     "firebase": "^11.2.0",
     "framer-motion": "^11.17.0",

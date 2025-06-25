@@ -430,6 +430,8 @@ export const studentDatabase: StudentData[] = [
 { regNumber: "H250640N", name: "TINOTENDA", surname: "CHARUMA", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 
 // Bachelor of Technology Honours Degree in Financial Engineering - MALE
+{ regNumber: "H250626F", name: "KAREN", surname: "JAMES", gender: "Female", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
+{ regNumber: "H250625Z", name: "TAWANDA", surname: "MUSENGI", gender: "Male", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250023V", name: "OWEN PATO", surname: "PATO", gender: "Male", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250154Y", name: "NYASHA", surname: "MOYANA", gender: "Male", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
 { regNumber: "H250185J", name: "MARLVIN", surname: "MUFO", gender: "Male", programme: "BTECH_FINANCIAL_ENGINEERING", part: "1" },
