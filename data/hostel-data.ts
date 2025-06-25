@@ -1,4 +1,5 @@
 import { db } from "@/lib/firebase";
+import { logHostelOperation } from '@/utils/hostel-id-validation';
 import { 
   collection, 
   doc, 
@@ -57,23 +58,59 @@ export const fetchHostelById = async (hostelId: string): Promise<Hostel | null> 
  */
 export const createHostel = async (hostel: Omit<Hostel, 'id'>): Promise<string> => {
   try {
-    // Final safety check: ensure no hostel with the same name exists
+    // STRICT VALIDATION: Ensure hostel name is provided and valid
+    if (!hostel.name || typeof hostel.name !== 'string' || !hostel.name.trim()) {
+      throw new Error('Hostel name is required and must be a non-empty string');
+    }
+
+    // Normalize the hostel name for comparison
+    const normalizedName = hostel.name.toLowerCase().trim();
+    
+    console.log(`[HOSTEL CREATION] Attempting to create hostel: "${hostel.name}"`);
+    
+    // STRICT DUPLICATE CHECK: Ensure no hostel with the same name exists
     const existingHostels = await fetchHostels();
     const duplicate = existingHostels.find(
-      existing => existing.name.toLowerCase().trim() === hostel.name.toLowerCase().trim()
+      existing => existing.name.toLowerCase().trim() === normalizedName
     );
     
     if (duplicate) {
-      console.log(`Hostel "${hostel.name}" already exists with ID: ${duplicate.id}. Skipping creation.`);
+      logHostelOperation('CREATE', {
+        hostelName: hostel.name,
+        existingHostelId: duplicate.id,
+        action: 'duplicate_prevented',
+        message: 'Returned existing hostel ID instead of creating duplicate'
+      });
+      console.log(`[HOSTEL CREATION] Hostel "${hostel.name}" already exists with ID: ${duplicate.id}. Returning existing ID.`);
       return duplicate.id;
     }
 
+    // Additional validation: check for similar names (prevent typos from creating duplicates)
+    const similarHostel = existingHostels.find(existing => {
+      const existingNormalized = existing.name.toLowerCase().trim();
+      return existingNormalized.includes(normalizedName) || normalizedName.includes(existingNormalized);
+    });
+
+    if (similarHostel) {
+      console.warn(`[HOSTEL CREATION] WARNING: Similar hostel name found: "${similarHostel.name}" (ID: ${similarHostel.id}). Proceeding with creation of "${hostel.name}".`);
+    }
+
     const hostelsCollection = collection(db, "hostels");
-    const docRef = await addDoc(hostelsCollection, hostel);
-    console.log(`Successfully created hostel "${hostel.name}" with ID: ${docRef.id}`);
+    const docRef = await addDoc(hostelsCollection, {
+      ...hostel,
+      name: hostel.name.trim() // Ensure the name is trimmed when stored
+    });
+    
+    logHostelOperation('CREATE', {
+      hostelId: docRef.id,
+      hostelName: hostel.name.trim(),
+      action: 'created_successfully'
+    });
+    
+    console.log(`[HOSTEL CREATION] Successfully created hostel "${hostel.name}" with ID: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
-    console.error("Error creating hostel:", error);
+    console.error("[HOSTEL CREATION ERROR]", error);
     throw error;
   }
 };
@@ -158,6 +195,50 @@ export const allocateRoom = async (
   hostelId: string
 ): Promise<RoomAllocation> => {
   try {
+    // STRICT ID VALIDATION: Ensure hostelId is provided and valid
+    if (!hostelId || typeof hostelId !== 'string') {
+      throw new Error('Invalid hostel ID provided');
+    }
+
+    // STRICT ID VALIDATION: Verify hostel exists before proceeding
+    const hostel = await fetchHostelById(hostelId);
+    if (!hostel) {
+      throw new Error(`Hostel with ID ${hostelId} not found`);
+    }
+
+    // STRICT ID VALIDATION: Verify room exists in the specified hostel
+    let roomFound = false;
+    let targetRoom: Room | undefined;
+    
+    hostel.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        if (room.id === roomId) {
+          roomFound = true;
+          targetRoom = room;
+        }
+      });
+    });
+
+    if (!roomFound || !targetRoom) {
+      throw new Error(`Room with ID ${roomId} not found in hostel ${hostel.name}`);
+    }
+
+    // Check room availability
+    if (!targetRoom.isAvailable || targetRoom.occupants.length >= targetRoom.capacity) {
+      throw new Error(`Room ${targetRoom.number} is not available for allocation`);
+    }
+
+    logHostelOperation('ALLOCATE', {
+      hostelId,
+      hostelName: hostel.name,
+      roomId,
+      roomNumber: targetRoom.number,
+      studentRegNumber,
+      operation: 'initial_allocation'
+    });
+
+    console.log(`[ROOM ALLOCATION] Student: ${studentRegNumber}, Room: ${roomId} (${targetRoom.number}), Hostel: ${hostelId} (${hostel.name})`);
+    
     // Fetch hostel settings to get the grace period (which equals the deadline)
     const settings = await fetchHostelSettings();
     
@@ -176,30 +257,29 @@ export const allocateRoom = async (
     const allocationsCollection = collection(db, "roomAllocations");
     const docRef = await addDoc(allocationsCollection, allocation);
 
-    // Update room occupancy
-    const hostel = await fetchHostelById(hostelId);
-    if (hostel) {
-      const updatedHostel = { ...hostel };
-      updatedHostel.floors.forEach(floor => {
-        floor.rooms.forEach(room => {
-          if (room.id === roomId) {
-            room.occupants.push(studentRegNumber);
-            if (room.occupants.length >= room.capacity) {
-              room.isAvailable = false;
-            }
+    // Update room occupancy in the existing hostel object
+    const updatedHostel = { ...hostel };
+    updatedHostel.floors.forEach(floor => {
+      floor.rooms.forEach(room => {
+        if (room.id === roomId) {
+          room.occupants.push(studentRegNumber);
+          if (room.occupants.length >= room.capacity) {
+            room.isAvailable = false;
           }
-        });
+        }
       });
-      
-      await updateHostel(hostelId, updatedHostel);
-    }
+    });
+    
+    await updateHostel(hostelId, updatedHostel);
+
+    console.log(`[ROOM ALLOCATION SUCCESS] Allocation ID: ${docRef.id}, Student: ${studentRegNumber}, Room: ${targetRoom.number}`);
 
     return {
       id: docRef.id,
       ...allocation
     };
   } catch (error) {
-    console.error("Error allocating room:", error);
+    console.error("[ROOM ALLOCATION ERROR]", error);
     throw error;
   }
 };
@@ -869,6 +949,19 @@ export const changeRoomAllocation = async (
   isAdminAction: boolean = false
 ): Promise<void> => {
   try {
+    // STRICT ID VALIDATION: Ensure all IDs are provided and valid
+    if (!studentRegNumber || typeof studentRegNumber !== 'string') {
+      throw new Error('Invalid student registration number provided');
+    }
+    if (!newRoomId || typeof newRoomId !== 'string') {
+      throw new Error('Invalid room ID provided');
+    }
+    if (!newHostelId || typeof newHostelId !== 'string') {
+      throw new Error('Invalid hostel ID provided');
+    }
+
+    console.log(`[ROOM CHANGE] Starting room change for student: ${studentRegNumber}, New Room: ${newRoomId}, New Hostel: ${newHostelId}`);
+    
     // First, clean up any duplicate allocations
     await cleanupDuplicateAllocations(studentRegNumber);
 
@@ -885,12 +978,13 @@ export const changeRoomAllocation = async (
       throw new Error("Students can only change rooms within the same hostel");
     }
 
-    // Check if new room is available
+    // STRICT ID VALIDATION: Verify new hostel exists
     const newHostel = await fetchHostelById(newHostelId);
     if (!newHostel) {
-      throw new Error("Target hostel not found");
+      throw new Error(`Target hostel with ID ${newHostelId} not found`);
     }
 
+    // STRICT ID VALIDATION: Verify new room exists in the target hostel
     let newRoom: Room | null = null;
     for (const floor of newHostel.floors) {
       const room = floor.rooms.find(r => r.id === newRoomId);
@@ -901,7 +995,7 @@ export const changeRoomAllocation = async (
     }
 
     if (!newRoom) {
-      throw new Error("Target room not found");
+      throw new Error(`Target room with ID ${newRoomId} not found in hostel ${newHostel.name}`);
     }
 
     if (!newRoom.isAvailable || newRoom.occupants.length >= newRoom.capacity) {
@@ -916,15 +1010,32 @@ export const changeRoomAllocation = async (
       throw new Error("Cannot move to the same room");
     }
 
-    // Check price compatibility - only allow room changes when prices are the same
+    // STRICT ID VALIDATION: Verify current hostel exists
     const currentHostel = await fetchHostelById(currentAllocation.hostelId);
     if (!currentHostel) {
-      throw new Error("Current hostel not found");
+      throw new Error(`Current hostel with ID ${currentAllocation.hostelId} not found`);
     }
     
+    // Check price compatibility - only allow room changes when prices are the same
     if (currentHostel.pricePerSemester !== newHostel.pricePerSemester) {
       throw new Error(`Cannot change rooms with different prices. Current room: $${currentHostel.pricePerSemester}/semester, New room: $${newHostel.pricePerSemester}/semester`);
-    }// Check if this is a same-hostel move
+    }
+
+    console.log(`[ROOM CHANGE] Validation passed. Moving from ${currentHostel.name} (${currentAllocation.hostelId}) to ${newHostel.name} (${newHostelId})`);
+
+    logHostelOperation('CHANGE', {
+      studentRegNumber,
+      fromHostelId: currentAllocation.hostelId,
+      fromHostelName: currentHostel.name,
+      fromRoomId: currentAllocation.roomId,
+      toHostelId: newHostelId,
+      toHostelName: newHostel.name,
+      toRoomId: newRoomId,
+      isAdminAction,
+      operation: 'room_change_validation_passed'
+    });
+
+    // Check if this is a same-hostel move
     const isSameHostelMove = currentAllocation.hostelId === newHostelId;
 
     if (isSameHostelMove) {
