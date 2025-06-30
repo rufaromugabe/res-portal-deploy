@@ -238,17 +238,7 @@ const Accepted = () => {
     }
   };
 
-  const handleOpenModal = (student: any) => {
-    // This function is no longer needed but kept for compatibility
-  };
-
-  const handleCloseModal = () => {
-    // This function is no longer needed but kept for compatibility
-  };
-
-  const handlePaymentStatusUpdate = (updatedStudent: any) => {
-    // This function is no longer needed but kept for compatibility
-  };
+  
 
   const handleExportAcceptedStudents = () => {
     if (!acceptedApplications.length) {
@@ -268,7 +258,6 @@ const Accepted = () => {
       'Hostel Name',
       'Room Number',
       'Floor',
-      'Status',
       'Payment Status'
     ];
 
@@ -288,7 +277,6 @@ const Accepted = () => {
         hostelInfo.hostelName || 'Not Allocated',
         hostelInfo.roomNumber || '-',
         hostelInfo.floor || '-',
-        app.status || 'Accepted',
         paymentStatus
       ]);
     });
