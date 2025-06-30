@@ -246,10 +246,6 @@ const Accepted = () => {
       return;
     }
 
-    console.log('Exporting data for', acceptedApplications.length, 'students');
-    console.log('Hostel details:', hostelDetails);
-    console.log('Payment statuses:', paymentStatuses);
-
     const headers = [
       'Name',
       'Registration Number',
@@ -261,27 +257,21 @@ const Accepted = () => {
       'Payment Status'
     ];
 
-    const data: any[] = [];
-    
-    acceptedApplications.forEach(app => {
+    const data = acceptedApplications.map(app => {
       const hostelInfo = hostelDetails[app.regNumber] || { hostelName: 'Not Allocated', roomNumber: '-', floor: '-' };
       const paymentStatus = paymentStatuses[app.regNumber] || 'Pending';
       
-      console.log(`Processing ${app.regNumber}: hostel=${hostelInfo.hostelName}, payment=${paymentStatus}`);
-      
-      data.push([
-        app.name || '',
-        app.regNumber || '',
-        app.gender || '',
-        app.part || '',
-        hostelInfo.hostelName || 'Not Allocated',
-        hostelInfo.roomNumber || '-',
-        hostelInfo.floor || '-',
-        paymentStatus
-      ]);
+      return {
+        name: app.name || '',
+        registration_number: app.regNumber || '',
+        gender: app.gender || '',
+        part: app.part || '',
+        hostel_name: hostelInfo.hostelName || 'Not Allocated',
+        room_number: hostelInfo.roomNumber || '-',
+        floor: hostelInfo.floor || '-',
+        payment_status: paymentStatus
+      };
     });
-
-    console.log('Final export data:', data);
 
     try {
       generateExcelFile({
