@@ -65,37 +65,6 @@ const Archived = () => {
     );
   }, [applications, searchQuery]);
 
-  const handleExportExcel = () => {
-    try {
-      if (archivedApplications.length === 0) {
-        toast.info("No data available to export.");
-        return;
-      }
-
-      const headers = ['Name', 'Registration Number', 'Gender', 'Part'];
-      
-      const data = archivedApplications.map(app => ({
-        name: app.name,
-        registration_number: app.regNumber,
-        gender: app.gender,
-        part: app.part, // Adjust based on actual data structure
-      }));
-
-      console.log("Exporting Data:", data); // Debugging
-
-      generateExcelFile({
-        headers,
-        data,
-        fileName: 'Archived_Students.xlsx',
-      });
-
-      toast.success('Excel file generated successfully!');
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast.error('Failed to export Excel file.');
-    }
-  };
-
   // handlePublish function if applicable
 
   return (
@@ -110,10 +79,6 @@ const Archived = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8"
         />
-        <Button onClick={handleExportExcel} className="bg-gray-600 hover:bg-gray-700 ml-auto">
-          <Printer className="mr-2 h-5 w-5" />
-          Save as Excel
-        </Button>
       </div>
 
       {/* Table */}

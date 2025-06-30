@@ -31,7 +31,8 @@ import {
   Database,
   RotateCcw,
   ArrowRight,
-  UserPlus
+  UserPlus,
+  Printer
 } from 'lucide-react';
 import { Hostel, Room, RoomAllocation, HostelSettings } from '@/types/hostel';
 import {
@@ -57,6 +58,7 @@ import {
 } from '@/data/hostel-data';
 import { getAuth } from 'firebase/auth';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { generateExcelFile } from '@/utils/generate_xl';
 
 const AdminHostelManagement: React.FC = () => {
   const [hostels, setHostels] = useState<Hostel[]>([]);
@@ -935,6 +937,70 @@ const AdminHostelManagement: React.FC = () => {
       setIsAssigning(false);
     }
   };
+
+  const handleExportAllocationsExcel = () => {
+    if (!hostels.length) {
+      toast.info('No hostel data to export.');
+      return;
+    }
+    const headers = [
+      'Hostel Name',
+      'Floor Name',
+      'Room Number',
+      'Room Capacity',
+      'Room Gender',
+      'Occupant Registration Number',
+      'Is Reserved',
+      'Reserved By',
+      'Reserved Until'
+    ];
+    const data: any[] = [];
+    hostels.forEach(hostel => {
+      hostel.floors.forEach(floor => {
+        floor.rooms.forEach(room => {
+          if (room.occupants.length === 0) {
+            // Still export empty rooms
+            data.push({
+              hostel_name: hostel.name,
+              floor_name: floor.name,
+              room_number: room.number,
+              room_capacity: room.capacity,
+              room_gender: room.gender,
+              occupant_registration_number: '',
+              is_reserved: room.isReserved ? 'Yes' : 'No',
+              reserved_by: room.reservedBy || '',
+              reserved_until: room.reservedUntil || ''
+            });
+          } else {
+            room.occupants.forEach(occ => {
+              data.push({
+                hostel_name: hostel.name,
+                floor_name: floor.name,
+                room_number: room.number,
+                room_capacity: room.capacity,
+                room_gender: room.gender,
+                occupant_registration_number: occ,
+                is_reserved: room.isReserved ? 'Yes' : 'No',
+                reserved_by: room.reservedBy || '',
+                reserved_until: room.reservedUntil || ''
+              });
+            });
+          }
+        });
+      });
+    });
+    try {
+      generateExcelFile({
+        headers,
+        data,
+        fileName: 'hostel_allocations.xlsx',
+      });
+      toast.success('Excel file generated successfully!');
+    } catch (e) {
+      toast.error('Failed to generate Excel file.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -954,6 +1020,11 @@ const AdminHostelManagement: React.FC = () => {
               <p className="text-sm sm:text-base text-gray-600">Manage hostels, rooms, and allocations</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={handleExportAllocationsExcel} variant="outline">
+            <Printer className="w-4 h-4 mr-2" />
+            Export Excel
+          </Button>
+
           <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
