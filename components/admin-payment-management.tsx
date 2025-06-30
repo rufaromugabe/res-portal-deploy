@@ -20,7 +20,8 @@ import {
   DollarSign, 
   AlertTriangle,
   FileText,
-  Filter
+  Filter,
+  Printer
 } from 'lucide-react';
 import { 
   fetchAllPayments, 
@@ -30,9 +31,12 @@ import {
   addAdminPayment,
   deletePayment
 } from '@/data/payment-data';
-import { fetchStudentAllocations, getRoomDetailsFromAllocation } from '@/data/hostel-data';
-import { Payment, RoomAllocation } from '@/types/hostel';
+import { fetchStudentAllocations, getRoomDetailsFromAllocation, fetchAllocationById, fetchHostels } from '@/data/hostel-data';
+import { Payment, RoomAllocation, Hostel } from '@/types/hostel';
 import BankingDetails from '@/components/banking-details';
+import { generateExcelFile } from '@/utils/generate_xl';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const AdminPaymentManagement: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -58,6 +62,7 @@ const AdminPaymentManagement: React.FC = () => {
   });  const [isLoadingAmount, setIsLoadingAmount] = useState(false);
   const [allowAmountEdit, setAllowAmountEdit] = useState(false);
   const [roomInfo, setRoomInfo] = useState<{hostelName: string, roomNumber: string, floorName: string} | null>(null);
+  const [allocationDetails, setAllocationDetails] = useState<Map<string, { roomNumber: string; hostelName: string; price: number }>>(new Map());
 
   const auth = getAuth();
   const adminEmail = auth.currentUser?.email || '';
@@ -65,22 +70,55 @@ const AdminPaymentManagement: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+  
   const loadData = async () => {
     try {
       setLoading(true);
-      const [allPayments, pendingPayments] = await Promise.all([
+      // Fetch all data in parallel
+      const [allPayments, pendingPayments, hostels, allocations] = await Promise.all([
         fetchAllPayments(),
-        fetchPendingPayments()
+        fetchPendingPayments(),
+        fetchHostels(),
+        (async () => {
+          const allocationsCollection = collection(db, "roomAllocations");
+          const allocationsSnap = await getDocs(allocationsCollection);
+          return allocationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RoomAllocation[];
+        })()
       ]);
-      
+
+      // Create maps for efficient lookups
+      const hostelMap = new Map(hostels.map(h => [h.id, h]));
+
+      // Create a detailed map for allocations
+      const detailsMap = new Map<string, { roomNumber: string, hostelName: string, price: number }>();
+      allocations.forEach(alloc => {
+        const hostel = hostelMap.get(alloc.hostelId);
+        if (hostel) {
+          for (const floor of hostel.floors) {
+            const room = floor.rooms.find(r => r.id === alloc.roomId);
+            if (room) {
+              detailsMap.set(alloc.id, {
+                roomNumber: room.number,
+                hostelName: hostel.name,
+                price: hostel.pricePerSemester
+              });
+              break; // Found room, exit inner loop
+            }
+          }
+        }
+      });
+
       setPayments(allPayments);
       setPendingPayments(pendingPayments);
+      setAllocationDetails(detailsMap);
     } catch (error) {
       toast.error('Failed to load payment data');
+      console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
   };
+
   const fetchPaymentAmount = async (studentRegNumber: string) => {
     if (!studentRegNumber.trim()) {
       setAddPaymentForm(prev => ({ ...prev, amount: '' }));
@@ -183,7 +221,54 @@ const AdminPaymentManagement: React.FC = () => {
     } catch (error) {
       toast.error('Failed to add payment');
     }
-  };  const resetAddPaymentForm = () => {
+  };
+  
+  const handleExportExcel = () => {
+    if (filteredPayments.length === 0) {
+        toast.info("No data available to export.");
+        return;
+    }
+
+    const headers = [
+      'Student Reg Number', 
+      'Receipt Number', 
+      'Amount', 
+      'Status', 
+      'Payment Method', 
+      'Submission Date',
+      'Approval Date',
+      'Approved By',
+      'Hostel', 
+      'Room Number',
+      'Notes'
+    ];
+    
+    const data = filteredPayments.map(payment => {
+      const details = allocationDetails.get(payment.allocationId);
+      return {
+        student_reg_number: payment.studentRegNumber,
+        receipt_number: payment.receiptNumber,
+        amount: payment.amount,
+        status: payment.status,
+        payment_method: payment.paymentMethod,
+        submission_date: payment.submittedAt ? new Date(payment.submittedAt).toLocaleDateString() : 'N/A',
+        approval_date: payment.approvedAt ? new Date(payment.approvedAt).toLocaleDateString() : 'N/A',
+        approved_by: payment.approvedBy || 'N/A',
+        hostel: details ? details.hostelName : 'N/A',
+        room_number: details ? details.roomNumber : 'N/A',
+        notes: payment.notes || ''
+      };
+    });
+
+    generateExcelFile({
+      headers,
+      data,
+      fileName: 'payments_export.xlsx'
+    });
+    toast.success('Excel file generated successfully!');
+  };
+
+  const resetAddPaymentForm = () => {
     setAddPaymentForm({
       studentRegNumber: '',
       allocationId: '',
@@ -325,14 +410,20 @@ const AdminPaymentManagement: React.FC = () => {
               Pending ({stats.pending})
             </TabsTrigger>
           </TabsList>
-          <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Payment
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={handleExportExcel} variant="outline" className="flex-1 sm:w-auto">
+                <Printer className="w-4 h-4 mr-2" />
+                Export to Excel
+            </Button>
+            <Dialog open={addPaymentDialogOpen} onOpenChange={setAddPaymentDialogOpen}>
+                <DialogTrigger asChild>
+                <Button className="flex-1 sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Payment
+                </Button>
+                </DialogTrigger>
+            </Dialog>
+          </div>
         </div>        <TabsContent value="all" className="space-y-4">
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
@@ -703,8 +794,7 @@ const AdminPaymentManagement: React.FC = () => {
                   <SelectItem value="Card">Card</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
-              </Select>
-            </div>
+              </Select>            </div>
             
             {/* Show banking details when Bank Transfer is selected */}
             {addPaymentForm.paymentMethod === 'Bank Transfer' && (

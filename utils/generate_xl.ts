@@ -34,8 +34,10 @@ export function generateExcelFile<T>({
     return filteredRow;
   });
 
-  // Prepare worksheet with filtered data
-  const worksheet = xlsx.utils.json_to_sheet(filteredData);
+  // Prepare worksheet with filtered data, skipping the auto-generated header
+  const worksheet = xlsx.utils.json_to_sheet(filteredData, {
+    skipHeader: true,
+  });
 
   // Insert headers at the top
   xlsx.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
