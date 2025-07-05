@@ -707,13 +707,13 @@ const AdminPaymentManagement: React.FC = () => {
                 onChange={(e) => {
                   const value = e.target.value;
                   setAddPaymentForm({...addPaymentForm, studentRegNumber: value});
-                  // Auto-fetch payment amount when student reg number changes
-                  if (value.length > 3) { // Only fetch after some reasonable input
+         
+                  if (value.length === 8) {
                     fetchPaymentAmount(value);
                   }
                 }}
                 onBlur={() => {
-                  if (addPaymentForm.studentRegNumber) {
+                  if (addPaymentForm.studentRegNumber.length === 8) {
                     fetchPaymentAmount(addPaymentForm.studentRegNumber);
                   }
                 }}
