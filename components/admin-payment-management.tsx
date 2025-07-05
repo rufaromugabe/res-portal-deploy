@@ -494,6 +494,17 @@ const AdminPaymentManagement: React.FC = () => {
                               </Button>
                             </>
                           )}
+                          {payment.status === 'Approved' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openRejectDialog(payment)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -552,6 +563,19 @@ const AdminPaymentManagement: React.FC = () => {
                           Reject
                         </Button>
                       </div>
+                    )}
+                    {payment.status === 'Approved' && (
+                        <div className="flex gap-2 pt-2 border-t">
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => openRejectDialog(payment)}
+                                className="flex-1"
+                            >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                            </Button>
+                        </div>
                     )}
                   </div>
                 </CardContent>
