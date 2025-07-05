@@ -73,20 +73,20 @@ export const createHostel = async (hostel: Omit<Hostel, 'id'>): Promise<string> 
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      // A hostel with this exact name already exists
+      // A hostel with this exact name already exists - throw error to prevent duplicates
       const existingHostelId = querySnapshot.docs[0].id;
       
-      console.log(`[HOSTEL CREATION] Hostel "${hostel.name}" already exists with ID: ${existingHostelId}. Preventing duplicate.`);
+      console.log(`[HOSTEL CREATION] Hostel "${hostel.name}" already exists with ID: ${existingHostelId}. Throwing error to prevent duplicate.`);
       
       logHostelOperation('CREATE', {
         hostelName: hostel.name,
         existingHostelId: existingHostelId,
-        action: 'duplicate_prevented',
-        message: 'Returned existing hostel ID instead of creating duplicate'
+        action: 'duplicate_rejected',
+        message: 'Threw error to prevent duplicate hostel creation'
       });
       
-      // Return the existing hostel ID instead of creating a duplicate
-      return existingHostelId;
+      // Throw error instead of returning existing ID - strict no-duplicate policy
+      throw new Error(`A hostel with the name "${hostel.name}" already exists. Please use a different name.`);
     }
 
     // Additional validation: check for similar names (prevent typos from creating duplicates)
@@ -112,8 +112,8 @@ export const createHostel = async (hostel: Omit<Hostel, 'id'>): Promise<string> 
       if (!recheckSnapshot.empty) {
         // Another process created this hostel between our initial check and transaction
         const existingHostelId = recheckSnapshot.docs[0].id;
-        console.log(`[HOSTEL CREATION] Race condition detected - hostel "${hostel.name}" was created by another process. Returning existing ID: ${existingHostelId}`);
-        return existingHostelId;
+        console.log(`[HOSTEL CREATION] Race condition detected - hostel "${hostel.name}" was created by another process. Throwing error: ${existingHostelId}`);
+        throw new Error(`A hostel with the name "${hostel.name}" already exists. Please use a different name.`);
       }
 
       // Create a new hostel document with auto-generated ID
