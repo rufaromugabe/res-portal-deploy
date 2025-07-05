@@ -16,8 +16,8 @@ import {
 import { Room } from '@/types/hostel';
 
 interface RoomGridProps {
-  rooms: (Room & { hostelName: string; floorName: string; price: number })[];
-  onRoomSelect: (room: Room & { hostelName: string; floorName: string; price: number }) => void;
+  rooms: (Room & { hostelId: string; hostelName: string; floorName: string; price: number })[];
+  onRoomSelect: (room: Room & { hostelId: string; hostelName: string; floorName: string; price: number }) => void;
   isSelecting: boolean;
   existingAllocation: any;
   loading: boolean;

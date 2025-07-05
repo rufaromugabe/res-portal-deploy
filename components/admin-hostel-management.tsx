@@ -128,8 +128,8 @@ const AdminHostelManagement: React.FC = () => {
     currentRoomPrice: number;
     gender: 'Male' | 'Female' 
   } | null>(null);
-  const [availableRoomsForTransfer, setAvailableRoomsForTransfer] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
-  const [selectedTransferRoom, setSelectedTransferRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
+  const [availableRoomsForTransfer, setAvailableRoomsForTransfer] = useState<(Room & { hostelId: string; hostelName: string; floorName: string; price: number })[]>([]);
+  const [selectedTransferRoom, setSelectedTransferRoom] = useState<Room & { hostelId: string; hostelName: string; floorName: string; price: number } | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
 
   // Assign student dialog state
@@ -746,8 +746,9 @@ const AdminHostelManagement: React.FC = () => {
     try {
       setIsTransferring(true);
       
-      // Find the hostel ID for the selected room
-      const targetHostel = hostels.find(h => h.name === selectedTransferRoom.hostelName);
+      // Use the hostelId directly from the selectedTransferRoom to avoid name-based lookup
+      const targetHostelId = selectedTransferRoom.hostelId;
+      const targetHostel = hostels.find(h => h.id === targetHostelId);
       if (!targetHostel) {
         toast.error('Target hostel not found');
         return;
@@ -756,7 +757,7 @@ const AdminHostelManagement: React.FC = () => {
       await changeRoomAllocation(
         transferStudent.regNumber,
         selectedTransferRoom.id,
-        targetHostel.id,
+        targetHostelId, // Use the direct hostelId
         transferStudent.gender,
         true // isAdminAction
       );
@@ -765,7 +766,7 @@ const AdminHostelManagement: React.FC = () => {
         const updatedHostel = { ...hostel };
         
         // Handle same-hostel transfer (both remove and add in same hostel)
-        if (hostel.id === transferStudent.currentHostel && hostel.id === targetHostel.id) {
+        if (hostel.id === transferStudent.currentHostel && hostel.id === targetHostelId) {
           updatedHostel.floors = hostel.floors.map(floor => ({
             ...floor,
             rooms: floor.rooms.map(room => {
@@ -811,7 +812,7 @@ const AdminHostelManagement: React.FC = () => {
           }
           
           // Add student to new room
-          if (hostel.id === targetHostel.id) {
+          if (hostel.id === targetHostelId) {
             updatedHostel.floors = hostel.floors.map(floor => ({
               ...floor,
               rooms: floor.rooms.map(room => {

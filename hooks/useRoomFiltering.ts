@@ -19,13 +19,14 @@ export const useRoomFiltering = (hostels: Hostel[], filters: FilterOptions) => {
     const hostel = hostels.find(h => h.id === filters.selectedHostel);
     if (!hostel) return [];
 
-    let rooms: (Room & { hostelName: string; floorName: string; price: number })[] = [];
+    let rooms: (Room & { hostelId: string; hostelName: string; floorName: string; price: number })[] = [];
     
     hostel.floors.forEach(floor => {
       if (!filters.selectedFloor || filters.selectedFloor === 'all' || floor.id === filters.selectedFloor) {
         floor.rooms.forEach(room => {
           rooms.push({
             ...room,
+            hostelId: hostel.id,
             hostelName: hostel.name,
             floorName: floor.name,
             price: hostel.pricePerSemester

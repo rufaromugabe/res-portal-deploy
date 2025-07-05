@@ -11,7 +11,8 @@ import {
   query,
   where,
   orderBy,
-  addDoc
+  addDoc,
+  runTransaction
 } from "firebase/firestore";
 import { Hostel, Room, RoomAllocation, HostelSettings } from "@/types/hostel";
 
@@ -63,52 +64,78 @@ export const createHostel = async (hostel: Omit<Hostel, 'id'>): Promise<string> 
       throw new Error('Hostel name is required and must be a non-empty string');
     }
 
-    // Normalize the hostel name for comparison
     const normalizedName = hostel.name.toLowerCase().trim();
-    
     console.log(`[HOSTEL CREATION] Attempting to create hostel: "${hostel.name}"`);
     
-    // STRICT DUPLICATE CHECK: Ensure no hostel with the same name exists
-    const existingHostels = await fetchHostels();
-    const duplicate = existingHostels.find(
-      existing => existing.name.toLowerCase().trim() === normalizedName
-    );
-    
-    if (duplicate) {
+    // First check if a hostel with this name already exists
+    const hostelsCollection = collection(db, "hostels");
+    const q = query(hostelsCollection, where("name", "==", hostel.name.trim()));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // A hostel with this exact name already exists
+      const existingHostelId = querySnapshot.docs[0].id;
+      
+      console.log(`[HOSTEL CREATION] Hostel "${hostel.name}" already exists with ID: ${existingHostelId}. Preventing duplicate.`);
+      
       logHostelOperation('CREATE', {
         hostelName: hostel.name,
-        existingHostelId: duplicate.id,
+        existingHostelId: existingHostelId,
         action: 'duplicate_prevented',
         message: 'Returned existing hostel ID instead of creating duplicate'
       });
-      console.log(`[HOSTEL CREATION] Hostel "${hostel.name}" already exists with ID: ${duplicate.id}. Returning existing ID.`);
-      return duplicate.id;
+      
+      // Return the existing hostel ID instead of creating a duplicate
+      return existingHostelId;
     }
 
     // Additional validation: check for similar names (prevent typos from creating duplicates)
-    const similarHostel = existingHostels.find(existing => {
-      const existingNormalized = existing.name.toLowerCase().trim();
-      return existingNormalized.includes(normalizedName) || normalizedName.includes(existingNormalized);
+    const allHostelsSnapshot = await getDocs(hostelsCollection);
+    
+    const similarHostel = allHostelsSnapshot.docs.find(doc => {
+      const existingName = doc.data().name.toLowerCase().trim();
+      return existingName !== normalizedName && 
+             (existingName.includes(normalizedName) || normalizedName.includes(existingName));
     });
 
     if (similarHostel) {
-      console.warn(`[HOSTEL CREATION] WARNING: Similar hostel name found: "${similarHostel.name}" (ID: ${similarHostel.id}). Proceeding with creation of "${hostel.name}".`);
+      const similarHostelData = similarHostel.data();
+      console.warn(`[HOSTEL CREATION] WARNING: Similar hostel name found: "${similarHostelData.name}" (ID: ${similarHostel.id}). Proceeding with creation of "${hostel.name}".`);
     }
 
-    const hostelsCollection = collection(db, "hostels");
-    const docRef = await addDoc(hostelsCollection, {
-      ...hostel,
-      name: hostel.name.trim() // Ensure the name is trimmed when stored
+    // Use transaction to create the hostel atomically
+    const newHostelId = await runTransaction(db, async (transaction) => {
+      // Double-check within transaction to prevent race conditions
+      const recheckQuery = query(hostelsCollection, where("name", "==", hostel.name.trim()));
+      const recheckSnapshot = await getDocs(recheckQuery);
+      
+      if (!recheckSnapshot.empty) {
+        // Another process created this hostel between our initial check and transaction
+        const existingHostelId = recheckSnapshot.docs[0].id;
+        console.log(`[HOSTEL CREATION] Race condition detected - hostel "${hostel.name}" was created by another process. Returning existing ID: ${existingHostelId}`);
+        return existingHostelId;
+      }
+
+      // Create a new hostel document with auto-generated ID
+      const newHostelRef = doc(hostelsCollection);
+      
+      transaction.set(newHostelRef, {
+        ...hostel,
+        name: hostel.name.trim() // Ensure the name is trimmed when stored
+      });
+      
+      logHostelOperation('CREATE', {
+        hostelId: newHostelRef.id,
+        hostelName: hostel.name.trim(),
+        action: 'created_successfully_in_transaction'
+      });
+      
+      console.log(`[HOSTEL CREATION] Successfully creating hostel "${hostel.name}" with ID: ${newHostelRef.id}`);
+      
+      return newHostelRef.id;
     });
-    
-    logHostelOperation('CREATE', {
-      hostelId: docRef.id,
-      hostelName: hostel.name.trim(),
-      action: 'created_successfully'
-    });
-    
-    console.log(`[HOSTEL CREATION] Successfully created hostel "${hostel.name}" with ID: ${docRef.id}`);
-    return docRef.id;
+
+    return newHostelId;
   } catch (error) {
     console.error("[HOSTEL CREATION ERROR]", error);
     throw error;
@@ -170,9 +197,10 @@ export const fetchAvailableRooms = async (gender: 'Male' | 'Female'): Promise<Ro
                 (room.gender === gender || room.gender === 'Mixed')) {
               availableRooms.push({
                 ...room,
+                hostelId: hostel.id, // Add hostelId for consistency
                 hostelName: hostel.name,
                 floorName: floor.name
-              } as Room & { hostelName: string; floorName: string });
+              } as Room & { hostelId: string; hostelName: string; floorName: string });
             }
           });
         });
@@ -1204,7 +1232,7 @@ export const getAvailableRoomsForChange = async (
   studentRegNumber: string,
   studentGender: 'Male' | 'Female',
   isAdminAction: boolean = false
-): Promise<(Room & { hostelName: string; floorName: string; price: number })[]> => {
+): Promise<(Room & { hostelId: string; hostelName: string; floorName: string; price: number })[]> => {
   try {
     const currentAllocations = await fetchStudentAllocations(studentRegNumber);
     if (currentAllocations.length === 0) {
@@ -1221,7 +1249,7 @@ export const getAvailableRoomsForChange = async (
     
     const currentRoomPrice = currentHostel.pricePerSemester;
     const hostels = await fetchHostels();
-    const availableRooms: (Room & { hostelName: string; floorName: string; price: number })[] = [];
+    const availableRooms: (Room & { hostelId: string; hostelName: string; floorName: string; price: number })[] = [];
 
     hostels.forEach(hostel => {
       if (hostel.isActive) {
@@ -1249,6 +1277,7 @@ export const getAvailableRoomsForChange = async (
                 (room.gender === studentGender || room.gender === 'Mixed')) {
               availableRooms.push({
                 ...room,
+                hostelId: hostel.id, // Add hostelId to prevent lookup by name
                 hostelName: hostel.name,
                 floorName: floor.name,
                 price: hostel.pricePerSemester

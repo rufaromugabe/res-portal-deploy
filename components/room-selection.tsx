@@ -45,13 +45,13 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
   const [priceFilter, setPriceFilter] = useState<string>('any');
 
   // Selection state
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room & { hostelId: string; hostelName: string; floorName: string; price: number } | null>(null);
   const [isSelecting, setIsSelecting] = useState<boolean>(false);
 
   // Room change state
   const [showChangeRoomDialog, setShowChangeRoomDialog] = useState(false);
-  const [availableRoomsForChange, setAvailableRoomsForChange] = useState<(Room & { hostelName: string; floorName: string; price: number })[]>([]);
-  const [selectedNewRoom, setSelectedNewRoom] = useState<Room & { hostelName: string; floorName: string; price: number } | null>(null);
+  const [availableRoomsForChange, setAvailableRoomsForChange] = useState<(Room & { hostelId: string; hostelName: string; floorName: string; price: number })[]>([]);
+  const [selectedNewRoom, setSelectedNewRoom] = useState<Room & { hostelId: string; hostelName: string; floorName: string; price: number } | null>(null);
   const [isChangingRoom, setIsChangingRoom] = useState(false);
   // Custom hooks
   const { existingAllocation, allocationRoomDetails, checkExistingAllocation } = useStudentAllocation(hostels);
@@ -90,7 +90,7 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     }
   };
 
-  const handleRoomSelect = (room: Room & { hostelName: string; floorName: string; price: number }) => {
+  const handleRoomSelect = (room: Room & { hostelId: string; hostelName: string; floorName: string; price: number }) => {
     if (isSelecting || existingAllocation) return;
     setSelectedRoom(room);
   };
@@ -198,20 +198,18 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
     try {
       setIsChangingRoom(true);
       
-      // STRICT ID USAGE: Find hostel ID by matching hostel name from selectedNewRoom
-      // This ensures we always use proper hostel IDs and never create duplicate hostels
-      const targetHostel = hostels.find(h => h.name === selectedNewRoom.hostelName);
-      if (!targetHostel) {
-        throw new Error(`Hostel "${selectedNewRoom.hostelName}" not found. Please refresh and try again.`);
+      // FIXED: Use hostelId directly instead of name-based lookup to prevent duplicate hostel issues
+      const targetHostelId = selectedNewRoom.hostelId;
+      
+      if (!targetHostelId) {
+        throw new Error("Target hostel ID is missing. Please refresh and try again.");
       }
       
       // Additional validation to ensure the hostel ID is valid
-      const hostelValidation = await validateHostelId(targetHostel.id);
+      const hostelValidation = await validateHostelId(targetHostelId);
       if (!hostelValidation.isValid) {
         throw new Error(hostelValidation.error || "Invalid hostel selected. Please refresh and try again.");
       }
-      
-      const targetHostelId = targetHostel.id;
       
       logHostelOperation('CHANGE', {
         fromHostelId: existingAllocation.hostelId,
@@ -220,13 +218,13 @@ const RoomSelection: React.FC<RoomSelectionProps> = ({ onRoomSelected, studentPr
         fromRoomId: existingAllocation.roomId,
         toRoomId: selectedNewRoom.id,
         studentRegNumber: existingAllocation.studentRegNumber,
-        operation: 'room_change'
+        operation: 'room_change_using_hostel_id'
       });
       
       await changeRoomAllocation(
         existingAllocation.studentRegNumber,
         selectedNewRoom.id,
-        targetHostelId,
+        targetHostelId, // Use the direct hostelId instead of looking up by name
         studentProfile.gender as 'Male' | 'Female'
       );
 

@@ -26,9 +26,9 @@ import { Room } from '@/types/hostel';
 interface RoomChangeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  availableRooms: (Room & { hostelName: string; floorName: string; price: number })[];
-  selectedRoom: (Room & { hostelName: string; floorName: string; price: number }) | null;
-  onRoomSelect: (room: Room & { hostelName: string; floorName: string; price: number }) => void;
+  availableRooms: (Room & { hostelId: string; hostelName: string; floorName: string; price: number })[];
+  selectedRoom: (Room & { hostelId: string; hostelName: string; floorName: string; price: number }) | null;
+  onRoomSelect: (room: Room & { hostelId: string; hostelName: string; floorName: string; price: number }) => void;
   onConfirm: () => void;
   isChanging: boolean;
 }
