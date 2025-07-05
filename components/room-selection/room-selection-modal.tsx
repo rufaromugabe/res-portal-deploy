@@ -23,7 +23,7 @@ import {
 import { Room } from '@/types/hostel';
 
 interface RoomSelectionModalProps {
-  room: Room & { hostelName: string; floorName: string; price: number } | null;
+  room: Room & { hostelId: string; hostelName: string; floorName: string; price: number } | null;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
