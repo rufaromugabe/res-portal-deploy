@@ -281,7 +281,6 @@ toast.success(`Application status changed successfully.`)
               <TableHead>Gender</TableHead>
               <TableHead>Programme</TableHead>
               <TableHead>Part</TableHead>
-              <TableHead>Preferred Hostel</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right"></TableHead>
@@ -299,7 +298,6 @@ toast.success(`Application status changed successfully.`)
                 <TableCell className="max-w-[80px]">{application.gender}</TableCell>
                 <TableCell className="max-w-[200px] overflow-hidden">{application.programme}</TableCell>
                 <TableCell className="max-w-[20px] overflow-hidden">{application.part}</TableCell>
-                <TableCell className="max-w-[200px]">{application.preferredHostel}</TableCell>
                 <TableCell className="space-y-2 min-w-[200px]">
                   <div className="flex items-center space-x-2">
                     <Mail className="h-3 w-3" />

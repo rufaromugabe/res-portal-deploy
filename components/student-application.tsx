@@ -1,4 +1,5 @@
-'use client'; 
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -6,38 +7,23 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from 'react-toastify';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAuth } from "firebase/auth";
 import { StudentProfile } from "./student-profile";
-import { fetchHostels, fetchStudentAllocations, getRoomDetailsFromAllocation } from "@/data/hostel-data";
-import { Hostel, RoomAllocation } from "@/types/hostel";
+import { fetchStudentAllocations, getRoomDetailsFromAllocation } from "@/data/hostel-data";
+import { RoomAllocation } from "@/types/hostel";
 
-// Define Zod schema for validation
+// Simplified schema - no preferred hostel needed anymore
 const StudentApplicationSchema = z.object({
-  preferredHostel: z
-    .string()
-    .min(1, "Preferred hostel is required")
+  // No fields needed - just tracking that application was submitted
 });
 
 type FormValues = z.infer<typeof StudentApplicationSchema>;
 
 interface ApplicationData {
-  preferredHostel: string;
   name: string;
   email: string;
   regNumber: string;
@@ -63,15 +49,12 @@ const StudentApplicationForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true); // State to manage loading
   const [application, setApplication] = useState<ApplicationData | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
-  const [hostels, setHostels] = useState<Hostel[]>([]);
   const [roomAllocation, setRoomAllocation] = useState<RoomAllocation | null>(null);
   const [roomDetails, setRoomDetails] = useState<{roomNumber: string, hostelName: string, floorName: string, price: number} | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(StudentApplicationSchema),
-    defaultValues: {
-      preferredHostel: "",
-    },
+    defaultValues: {},
   });  // Fetch authenticated user's profile and application
   useEffect(() => {
     const fetchProfileAndApplication = async () => {
@@ -125,10 +108,7 @@ const StudentApplicationForm: React.FC = () => {
           const applicationSnap = await getDoc(applicationDoc);
           if (applicationSnap.exists()) {
             setApplication(applicationSnap.data() as ApplicationData);
-          }          // Fetch hostels and filter only active ones
-          const hostelData = await fetchHostels();
-          const activeHostels = hostelData.filter(hostel => hostel.isActive);
-          setHostels(activeHostels);
+          }
 
           // Check for room allocation
           if (profileSnap.exists() && regNumber) {
@@ -212,20 +192,16 @@ const StudentApplicationForm: React.FC = () => {
         (profile.gender === "Female" && girlsCount < autoAcceptGirlsLimit)
       ) {
         status = "Pending";
-      }
-  
-      // Save the application with calculated status
+      }      // Save the application with calculated status
       await setDoc(applicationDoc, {
-        ...data,
         name,
         email,
         regNumber,
         submittedAt: new Date().toISOString(),
         status,
       });
-  
+
       setApplication({
-        ...data,
         name,
         email,
         regNumber,
@@ -297,7 +273,7 @@ const StudentApplicationForm: React.FC = () => {
           </h2>
           <p className="text-gray-600 mb-8 text-center">
             Below is your submitted application. You can delete it to submit a new one.
-          </p><div className="bg-gray-100 p-6 rounded-lg">
+          </p>          <div className="bg-gray-100 p-6 rounded-lg">
           <p>
             <strong>Name:</strong> {application.name}
           </p>
@@ -306,9 +282,6 @@ const StudentApplicationForm: React.FC = () => {
           </p>
           <p>
             <strong>Registration Number:</strong> {application.regNumber}
-          </p>
-          <p>
-            <strong>Preferred Hostel:</strong> {application.preferredHostel}
           </p>
           <p>
             <strong>Submitted At:</strong> {new Date(application.submittedAt).toLocaleString()}
@@ -320,7 +293,7 @@ const StudentApplicationForm: React.FC = () => {
             }`}>
               {application.status}
             </span>
-          </p>          {roomAllocation && roomDetails && (
+          </p>{roomAllocation && roomDetails && (
             <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
               <p className="font-semibold text-blue-800">Room Allocation:</p>
               <p><strong>Hostel:</strong> {roomDetails.hostelName}</p>
@@ -417,39 +390,25 @@ const StudentApplicationForm: React.FC = () => {
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-8 max-w-4xl mx-auto"
-        >          <FormField
-            control={form.control}
-            name="preferredHostel"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-lg font-medium">
-                  Preferred Hostel
-                </FormLabel>
-                <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a hostel" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hostels.map((hostel) => (
-                        <SelectItem key={hostel.id} value={hostel.name}>
-                          {hostel.name} (${hostel.pricePerSemester}/semester)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        >
+          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              Ready to Apply for On-Campus Accommodation
+            </h3>
+            <p className="text-blue-700">
+              Once you submit this application, you'll be able to select from available rooms. 
+              Your application will be processed and you'll receive confirmation to proceed with room selection.
+            </p>
+          </div>
+
           <Button
             type="submit"
             className="w-full text-lg py-6"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Submitting..." : "Submit Application"}
-          </Button>        </form>
+          </Button>
+        </form>
       </Form>
       </div>
     </div>

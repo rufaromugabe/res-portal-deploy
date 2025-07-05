@@ -8,7 +8,6 @@ export type Applications = {
   gender: "Male" | "Female";
   programme: string;
   part: number;
-  preferredHostel: string;
   email: string;
   phone: string;
   status: "Pending" | "Accepted" | "Archived";
@@ -80,7 +79,6 @@ export const fetchAllApplications = async (): Promise<Applications[]> => {
         gender: studentData.gender,
         programme: studentData.programme,
         part: studentData.part,
-        preferredHostel: applicationData.preferredHostel || "",
         email: studentData.email,
         phone: studentData.phone || "",
         status: applicationData.status || "Pending",
